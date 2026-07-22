@@ -1,0 +1,20 @@
+# --- GENERAL ---
+.DS_Store
+.vscode/
+.idea/
+
+# --- BACKEND (Server / Python / Docker) ---
+server/.venv/
+server/venv/
+server/__pycache__/
+server/**/__pycache__/
+server/.env
+server/alembic/versions/*.pyc
+.env
+
+# --- FRONTEND (Client / Node / Vite) ---
+client/node_modules/
+client/dist/
+client/.env
+client/.env.local
+client/.DS_Store
