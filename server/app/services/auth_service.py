@@ -32,6 +32,7 @@ from app.schemas.auth import (
     UserLoginRequest,
     UserPublicResponse,
     UserRegisterRequest,
+    UserProfileUpdateRequest,
 )
 
 settings = get_settings()
@@ -141,3 +142,25 @@ async def change_password(
     user.hashed_password = hash_password(payload.new_password)
     db.add(user)
     await db.commit()
+
+
+async def update_profile(
+    db: AsyncSession, user: User, payload: UserProfileUpdateRequest
+) -> User:
+    """Update user's profile details."""
+    if payload.email and payload.email.lower() != user.email:
+        existing = await db.scalar(
+            select(User).where(User.email == payload.email.lower())
+        )
+        if existing:
+            raise ConflictError("A user with this email already exists.")
+        user.email = payload.email.lower()
+
+    if payload.name:
+        user.name = payload.name
+
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+

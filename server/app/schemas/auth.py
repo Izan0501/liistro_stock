@@ -78,6 +78,13 @@ class UserPublicResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UserProfileUpdateRequest(BaseModel):
+    """Payload for PATCH /auth/me"""
+    
+    name: str | None = Field(None, min_length=2, max_length=120)
+    email: EmailStr | None = None
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(..., min_length=8, max_length=128)

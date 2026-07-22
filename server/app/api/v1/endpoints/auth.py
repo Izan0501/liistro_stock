@@ -20,6 +20,7 @@ from app.schemas.auth import (
     UserLoginRequest,
     UserPublicResponse,
     UserRegisterRequest,
+    UserProfileUpdateRequest,
 )
 from app.services import auth_service
 
@@ -79,6 +80,21 @@ async def login(
 )
 async def me(current_user: User = Depends(get_current_user)) -> UserPublicResponse:
     return UserPublicResponse.model_validate(current_user)
+
+
+@router.patch(
+    "/me",
+    response_model=UserPublicResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update currently authenticated user profile",
+)
+async def update_profile(
+    payload: UserProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserPublicResponse:
+    user = await auth_service.update_profile(db, current_user, payload)
+    return UserPublicResponse.model_validate(user)
 
 
 @router.patch(
