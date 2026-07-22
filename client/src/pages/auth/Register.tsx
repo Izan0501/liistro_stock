@@ -39,7 +39,12 @@ export default function Register() {
         token = loginRes.data.access_token;
       }
       
-      const user = response.data.user || response.data || { id: 1, email, name, role: 'Admin' };
+      // Temporarily store token so the interceptor can inject it for /auth/me
+      localStorage.setItem('access_token', token);
+      
+      const userResponse = await api.get('/auth/me');
+      const user = userResponse.data;
+      
       login(token, user);
 
     } catch (err: any) {
@@ -87,7 +92,7 @@ export default function Register() {
                 required
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Rodrigo Liistro"
+                placeholder="Name"
                 className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo transition-colors"
               />
             </div>
@@ -98,7 +103,7 @@ export default function Register() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="rodrigo@liistro.com"
+                placeholder="Email"
                 className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo transition-colors"
               />
             </div>

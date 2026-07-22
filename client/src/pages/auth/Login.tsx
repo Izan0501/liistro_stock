@@ -6,8 +6,8 @@ import { Loader2 } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('rodrigo@liistro.com');
-  const [password, setPassword] = useState('admin123'); // Reasonable default for easy testing
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState(''); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,16 +24,14 @@ export default function Login() {
       };
       
       const response = await api.post('/auth/login', payload);
-      
       const { access_token } = response.data;
       
-      // Since the backend might return User info, we can optionally map it, but for now fallback if missing
-      const user = response.data.user || {
-        id: 1,
-        email,
-        name: 'Rodrigo Liistro',
-        role: 'Admin'
-      };
+      // Set token temporarily in localStorage so interceptor injects it for the /auth/me call
+      localStorage.setItem('access_token', access_token);
+      
+      // Dynamically fetch the current user profile
+      const userResponse = await api.get('/auth/me');
+      const user = userResponse.data;
       
       login(access_token, user);
     } catch (err: any) {
@@ -82,7 +80,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="rodrigo@liistro.com"
+                placeholder="email"
                 className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo transition-colors"
               />
             </div>

@@ -54,7 +54,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 p-4 md:p-8 pb-24 md:pb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
@@ -76,7 +76,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Starting Capital" value={formatCurrency(totalCapital)} change="+0.0% from start" icon={DollarSign} trend="up" />
         <MetricCard title="Inventory Valuation" value={formatCurrency(inventoryValue)} change="Live" icon={Package} trend="up" />
         <MetricCard title="Monthly Revenue" value={formatCurrency(monthlyRevenue)} change="+12.5% from last month" icon={TrendingUp} trend="up" />

@@ -50,7 +50,7 @@ export default function Sales() {
   const total = cart.reduce((acc, item) => acc + (item.product.price * item.qty), 0);
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+    <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)] p-4 md:p-8 pb-24 md:pb-8 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>

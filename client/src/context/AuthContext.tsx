@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { api } from '../services/api';
 
 export interface User {
   id: number;
@@ -29,6 +31,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (token) {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+          localStorage.setItem('user', JSON.stringify(response.data));
+        } catch (error) {
+          console.error("Failed to fetch user profile", error);
+          // If 401 occurs, the interceptor will handle the logout automatically
+        }
+      }
+    };
+    fetchProfile();
+  }, [token]);
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
@@ -43,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
+    queryClient.clear();
     navigate('/login', { replace: true });
   };
 
