@@ -1,0 +1,36 @@
+# Core Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database & ORM
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+greenlet==3.1.1
+
+# Validation & Serialization
+pydantic==2.10.4
+pydantic-settings==2.7.0
+email-validator==2.2.0
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[argon2]==1.7.4
+argon2-cffi==23.1.0
+python-multipart==0.0.20
+
+# Rate Limiting
+slowapi==0.1.9
+limits==3.14.0
+
+# HTTP Client (for health checks)
+httpx==0.28.1
+
+# Dev / Testing
+pytest==8.3.4
+pytest-asyncio==0.25.2
+pytest-cov==6.0.0
+httpx==0.28.1
+
+# Utilities
+python-dotenv==1.0.1

@@ -1,0 +1,2 @@
+# Alembic migration versions directory
+# This directory is tracked in git (the .py migration files are gitignored until generated)
