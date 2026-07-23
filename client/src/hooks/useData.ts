@@ -20,8 +20,18 @@ export const useProducts = () => {
   return useQuery({
     queryKey: ['products'],
     queryFn: async () => {
-      // Trying the /products endpoint
       const { data } = await api.get('/products');
+      return data;
+    },
+    enabled: !!getAuthToken(),
+  });
+};
+
+export const useClients = () => {
+  return useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const { data } = await api.get('/clients');
       return data;
     },
     enabled: !!getAuthToken(),

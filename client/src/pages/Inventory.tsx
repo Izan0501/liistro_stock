@@ -2,12 +2,89 @@ import { useState } from 'react';
 import { Plus, Search, ArrowUpDown, MoreVertical, PackagePlus, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useProducts } from '../hooks/useData';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../services/api';
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modals state
+  const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   
+  // New Product Form State
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    sku: '',
+    category: '',
+    buy_price: '',
+    sell_price: '',
+    available_quantity: ''
+  });
+
+  // Restock Form State
+  const [restockData, setRestockData] = useState({
+    product_id: '',
+    operation: 'add',
+    quantity: '',
+    reason: ''
+  });
+  
   const { data: products, isLoading, isError } = useProducts();
+  const queryClient = useQueryClient();
+
+  const productList = Array.isArray(products) ? products : (products?.items || []);
+  const filtered = productList.filter((p: any) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Mutations
+  const createProductMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const { data } = await api.post('/products', payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      setIsNewProductModalOpen(false);
+      setNewProduct({ name: '', sku: '', category: '', buy_price: '', sell_price: '', available_quantity: '' });
+    }
+  });
+
+  const adjustStockMutation = useMutation({
+    mutationFn: async ({ productId, payload }: { productId: string, payload: any }) => {
+      const { data } = await api.post(`/products/${productId}/adjust-stock`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      setIsRestockModalOpen(false);
+      setRestockData({ product_id: '', operation: 'add', quantity: '', reason: '' });
+    }
+  });
+
+  const handleCreateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    createProductMutation.mutate({
+      name: newProduct.name,
+      buy_price: Number(newProduct.buy_price),
+      sell_price: Number(newProduct.sell_price),
+      available_quantity: Number(newProduct.available_quantity)
+    });
+  };
+
+  const handleAdjustStock = (e: React.FormEvent) => {
+    e.preventDefault();
+    const qty = Number(restockData.quantity);
+    const delta = restockData.operation === 'add' ? qty : -qty;
+    adjustStockMutation.mutate({
+      productId: restockData.product_id,
+      payload: {
+        quantity_delta: delta,
+        reason: restockData.reason
+      }
+    });
+  };
 
   // Handle Loading State
   if (isLoading) {
@@ -28,10 +105,6 @@ export default function Inventory() {
     );
   }
 
-  // Fallback to empty array if data isn't fetched
-  const productList = Array.isArray(products) ? products : (products?.items || []);
-  const filtered = productList.filter((p: any) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300 p-4 md:p-8 pb-24 md:pb-8">
       {/* Header */}
@@ -48,7 +121,9 @@ export default function Inventory() {
             <PackagePlus className="w-4 h-4" />
             Restock
           </button>
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:brightness-110 transition-all">
+          <button 
+            onClick={() => setIsNewProductModalOpen(true)}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:brightness-110 transition-all">
             <Plus className="w-4 h-4" />
             New Product
           </button>
@@ -150,40 +225,173 @@ export default function Inventory() {
         ))}
       </div>
 
-      {/* Restock Modal Placeholder */}
+      {/* Restock Modal */}
       {isRestockModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="glass-card w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-bold mb-4">Restock Inventory</h2>
-            <div className="space-y-4">
+          <div className="bg-obsidian border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-bold mb-4 text-white">Adjust Stock</h2>
+            <form onSubmit={handleAdjustStock} className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-text-secondary block mb-1.5">Supplier</label>
-                <select className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo appearance-none">
-                  <option>Distribuidora del Sur</option>
-                  <option>Pepsico</option>
-                  <option>Arcor</option>
+                <label className="text-sm font-medium text-text-secondary block mb-1.5">Product</label>
+                <select 
+                  required
+                  value={restockData.product_id}
+                  onChange={e => setRestockData({ ...restockData, product_id: e.target.value })}
+                  className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo appearance-none text-white"
+                >
+                  <option value="" disabled>Select a product...</option>
+                  {productList.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name} (Stock: {p.available_quantity})</option>
+                  ))}
                 </select>
               </div>
-              <div>
-                <label className="text-sm font-medium text-text-secondary block mb-1.5">Entry Date</label>
-                <input type="date" className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-text-secondary block mb-1.5">Operation</label>
+                  <select 
+                    value={restockData.operation}
+                    onChange={e => setRestockData({ ...restockData, operation: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo appearance-none text-white"
+                  >
+                    <option value="add">Add (+)</option>
+                    <option value="remove">Remove (-)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-text-secondary block mb-1.5">Quantity</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    required
+                    value={restockData.quantity}
+                    onChange={e => setRestockData({ ...restockData, quantity: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                  />
+                </div>
               </div>
-              <div className="border border-dashed border-white/20 rounded-lg p-4 text-center text-sm text-text-secondary cursor-pointer hover:bg-white/5 transition-colors">
-                + Add products from this supplier
+              <div>
+                <label className="text-sm font-medium text-text-secondary block mb-1.5">Reason</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. New shipment, Damage write-off"
+                  value={restockData.reason}
+                  onChange={e => setRestockData({ ...restockData, reason: e.target.value })}
+                  className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                />
               </div>
               
               <div className="flex gap-3 pt-4 border-t border-white/5">
                 <button 
+                  type="button"
                   onClick={() => setIsRestockModalOpen(false)}
                   className="flex-1 py-2.5 rounded-lg font-medium bg-white/5 text-text-primary hover:bg-white/10 transition-colors"
                 >
                   Cancel
                 </button>
-                <button className="flex-1 py-2.5 rounded-lg font-medium bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:brightness-110 transition-colors">
-                  Confirm Restock
+                <button 
+                  type="submit"
+                  disabled={adjustStockMutation.isPending}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:brightness-110 transition-colors disabled:opacity-50"
+                >
+                  {adjustStockMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Confirm Adjust
                 </button>
               </div>
-            </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* New Product Modal */}
+      {isNewProductModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-obsidian border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-bold mb-4 text-white">New Product</h2>
+            <form onSubmit={handleCreateProduct} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-text-secondary block mb-1.5">Product Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newProduct.name}
+                  onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
+                  className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-text-secondary block mb-1.5">SKU (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={newProduct.sku}
+                    onChange={e => setNewProduct({ ...newProduct, sku: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-text-secondary block mb-1.5">Category</label>
+                  <input 
+                    type="text" 
+                    value={newProduct.category}
+                    onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-text-secondary block mb-1.5">Buy Price</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    required
+                    value={newProduct.buy_price}
+                    onChange={e => setNewProduct({ ...newProduct, buy_price: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-text-secondary block mb-1.5">Sell Price</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    required
+                    value={newProduct.sell_price}
+                    onChange={e => setNewProduct({ ...newProduct, sell_price: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-text-secondary block mb-1.5">Stock</label>
+                  <input 
+                    type="number" 
+                    required
+                    value={newProduct.available_quantity}
+                    onChange={e => setNewProduct({ ...newProduct, available_quantity: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:border-accent-indigo text-white" 
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-4 border-t border-white/5">
+                <button 
+                  type="button"
+                  onClick={() => setIsNewProductModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-lg font-medium bg-white/5 text-text-primary hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={createProductMutation.isPending}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:brightness-110 transition-colors disabled:opacity-50"
+                >
+                  {createProductMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Create Product
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
