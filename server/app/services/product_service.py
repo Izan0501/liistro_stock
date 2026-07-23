@@ -85,7 +85,7 @@ async def adjust_stock(
     Creates a StockMovement record for auditability.
     Raises BadRequestError if adjustment would send quantity below zero.
     """
-    async with db.begin():
+    try:
         product = await db.get(Product, product_id, with_for_update=True)
         if not product:
             raise NotFoundError(f"Product {product_id} not found.")
@@ -109,6 +109,12 @@ async def adjust_stock(
             unit_price=product.buy_price,
         )
         db.add(movement)
+
+        await db.commit()
+
+    except Exception:
+        await db.rollback()
+        raise
 
     await db.refresh(product)
     return product

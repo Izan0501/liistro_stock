@@ -31,7 +31,7 @@ async def create_restock(
             "OUT movements are created automatically when a sale is registered."
         )
 
-    async with db.begin():
+    try:
         product = await db.get(Product, payload.product_id, with_for_update=True)
         if not product:
             raise NotFoundError(f"Product {payload.product_id} not found.")
@@ -55,6 +55,12 @@ async def create_restock(
             unit_price=payload.unit_price,
         )
         db.add(movement)
+
+        await db.commit()
+
+    except Exception:
+        await db.rollback()
+        raise
 
     await db.refresh(movement)
     return movement
