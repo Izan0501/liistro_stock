@@ -24,6 +24,9 @@ class Supplier(Base):
         default=uuid.uuid4,
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    contact_person: Mapped[str | None] = mapped_column(String(200), nullable=True)
     contact_info: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -32,6 +35,12 @@ class Supplier(Base):
     # Relationships
     stock_movements: Mapped[list["StockMovement"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "StockMovement", back_populates="supplier", lazy="noload"
+    )
+    purchases: Mapped[list["Purchase"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Purchase", back_populates="supplier", lazy="noload"
+    )
+    products: Mapped[list["Product"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Product", back_populates="supplier", lazy="noload"
     )
 
     def __repr__(self) -> str:

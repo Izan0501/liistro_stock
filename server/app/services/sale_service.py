@@ -14,33 +14,20 @@ Guarantees (per the ACID spec):
 
 Why explicit try/except instead of `async with db.begin()`:
   SQLAlchemy 2.0 with autocommit=False *autobegins* a transaction on the first
-  SQL statement inside a session.  Calling `db.begin()` on an already-started
-  session raises InvalidRequestError.  The correct pattern is to drive the
+  SQL statement inside a session. Calling `db.begin()` on an already-started
+  session raises InvalidRequestError. The correct pattern is to drive the
   transaction via explicit await db.commit() / await db.rollback().
-
-Steps executed inside a single BEGIN...COMMIT block:
-  1. Validate client exists.
-  2. Lock all product rows in PK-sorted order (prevents deadlocks).
-  3. Validate sufficient stock for every line item (fail-fast).
-  4. Compute total_amount using the server-side sell_price (not client input).
-  5. Insert the Sale record.
-  6. For each item:
-       a. Insert SaleItem.
-       b. Deduct product.available_quantity.
-       c. Insert StockMovement (OUT) for audit trail.
-  7. Update FinancialConfig.initial_capital += total_amount so the dashboard
-     capital reflects confirmed revenue immediately.
-  8. COMMIT — on any exception ROLLBACK the entire transaction.
 """
 
 from __future__ import annotations
 
 import uuid
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.exceptions import InsufficientStockError, NotFoundError
 from app.models.client import Client
@@ -100,7 +87,6 @@ async def create_sale(
                 )
 
         # ── Step 4: Compute total using canonical server-side sell_price ───────
-        #    Protects against price-manipulation attacks from the client.
         total_amount = sum(
             Decimal(str(locked_products[item.product_id].sell_price)) * item.quantity
             for item in payload.items
@@ -115,28 +101,24 @@ async def create_sale(
             notes=payload.notes,
         )
         db.add(sale)
-        # Flush to materialise sale.id so FK references below resolve
         await db.flush()
 
         # ── Step 6: Process each line item ─────────────────────────────────────
         for item in payload.items:
             product = locked_products[item.product_id]
 
-            # 6a. SaleItem (store submitted unit_price for line-item display)
             sale_item = SaleItem(
                 id=uuid.uuid4(),
                 sale_id=sale.id,
                 product_id=item.product_id,
                 quantity=item.quantity,
-                unit_price=item.unit_price,  # display price; total uses sell_price
+                unit_price=item.unit_price,
             )
             db.add(sale_item)
 
-            # 6b. Deduct inventory (already validated — safe to mutate)
             product.available_quantity -= item.quantity
             db.add(product)
 
-            # 6c. Immutable audit ledger row (OUT)
             movement = StockMovement(
                 id=uuid.uuid4(),
                 product_id=item.product_id,
@@ -148,23 +130,16 @@ async def create_sale(
             )
             db.add(movement)
 
-        # ── Step 7: Update FinancialConfig capital (Step E per spec) ──────────
-        #    Get-or-create the singleton row inside the same transaction so the
-        #    capital increment is atomic with the sale itself.
+        # ── Step 7: Update FinancialConfig capital ─────────────────────────────
         result = await db.execute(
             select(FinancialConfig).limit(1).with_for_update()
         )
         config = result.scalar_one_or_none()
         if config is None:
-            config = FinancialConfig(
-                id=uuid.uuid4(),
-                initial_capital=total_amount,
-            )
+            config = FinancialConfig(id=uuid.uuid4(), initial_capital=total_amount)
             db.add(config)
         else:
-            config.initial_capital = (
-                Decimal(str(config.initial_capital)) + total_amount
-            )
+            config.initial_capital = Decimal(str(config.initial_capital)) + total_amount
             db.add(config)
 
         # ── Step 8: COMMIT ─────────────────────────────────────────────────────
@@ -177,7 +152,10 @@ async def create_sale(
     # ── Reload with eager-loaded items for the HTTP response ──────────────────
     result = await db.execute(
         select(Sale)
-        .options(selectinload(Sale.items))
+        .options(
+            joinedload(Sale.client),
+            selectinload(Sale.items).joinedload(SaleItem.product)
+        )
         .where(Sale.id == sale.id)
     )
     return result.scalar_one()
@@ -186,7 +164,10 @@ async def create_sale(
 async def get_sale(db: AsyncSession, sale_id: uuid.UUID) -> Sale:
     result = await db.execute(
         select(Sale)
-        .options(selectinload(Sale.items))
+        .options(
+            joinedload(Sale.client),
+            selectinload(Sale.items).joinedload(SaleItem.product)
+        )
         .where(Sale.id == sale_id)
     )
     sale = result.scalar_one_or_none()
@@ -198,24 +179,73 @@ async def get_sale(db: AsyncSession, sale_id: uuid.UUID) -> Sale:
 async def list_sales(
     db: AsyncSession,
     client_id: uuid.UUID | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
     offset: int = 0,
     limit: int = 50,
-) -> tuple[int, list[Sale]]:
-    base_q = select(Sale).options(selectinload(Sale.items))
+) -> tuple[int, list[SaleResponse]]:
+    """
+    Return paginated sales with client_name and total_items pre-computed.
+
+    Eagerly loads client and items (along with product) to prevent N+1 queries.
+    """
+    base_q = (
+        select(Sale)
+        .options(
+            joinedload(Sale.client),
+            selectinload(Sale.items).joinedload(SaleItem.product)
+        )
+    )
+
+    # ── Filters ────────────────────────────────────────────────────────────────
     if client_id:
         base_q = base_q.where(Sale.client_id == client_id)
+    if start_date:
+        start_dt = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0, tzinfo=timezone.utc)
+        base_q = base_q.where(Sale.sale_date >= start_dt)
+    if end_date:
+        end_dt = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc)
+        base_q = base_q.where(Sale.sale_date <= end_dt)
 
-    count_q = (
-        select(func.count()).select_from(
-            select(Sale).where(Sale.client_id == client_id).subquery()
-        )
-        if client_id
-        else select(func.count()).select_from(select(Sale).subquery())
-    )
-    total: int = await db.scalar(count_q) or 0
+    # ── Count ──────────────────────────────────────────────────────────────────
+    count_base = select(Sale)
+    if client_id:
+        count_base = count_base.where(Sale.client_id == client_id)
+    if start_date:
+        start_dt = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0, tzinfo=timezone.utc)
+        count_base = count_base.where(Sale.sale_date >= start_dt)
+    if end_date:
+        end_dt = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc)
+        count_base = count_base.where(Sale.sale_date <= end_dt)
+    
+    total: int = await db.scalar(
+        select(func.count()).select_from(count_base.subquery())
+    ) or 0
 
-    result = await db.execute(
+    # ── Paginated results ──────────────────────────────────────────────────────
+    rows = await db.execute(
         base_q.order_by(Sale.sale_date.desc()).offset(offset).limit(limit)
     )
-    items = list(result.scalars().all())
-    return total, items
+
+    sales = list(rows.scalars().all())
+    responses: list[SaleResponse] = []
+    
+    for sale_obj in sales:
+        c_name = sale_obj.client.name if getattr(sale_obj, "client", None) else None
+        t_items = sum(i.quantity for i in sale_obj.items) if getattr(sale_obj, "items", None) else 0
+
+        responses.append(
+            SaleResponse(
+                id=sale_obj.id,
+                client_id=sale_obj.client_id,
+                client_name=c_name,
+                total_amount=Decimal(str(sale_obj.total_amount)),
+                total_items=t_items,
+                status=sale_obj.status,
+                notes=sale_obj.notes,
+                sale_date=sale_obj.sale_date,
+                items=[SaleItemResponse.from_orm(i) for i in sale_obj.items],
+            )
+        )
+
+    return total, responses

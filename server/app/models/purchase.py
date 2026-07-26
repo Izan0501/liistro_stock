@@ -1,8 +1,7 @@
 """
-models/sale.py
-Sale and SaleItem models.
-A Sale is always created inside a serialisable ACID transaction that
-simultaneously deducts stock and records revenue.
+models/purchase.py
+Purchase and PurchaseItem models.
+Analogous to Sales, but for acquiring stock from Suppliers.
 """
 
 from __future__ import annotations
@@ -18,63 +17,63 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class SaleStatus(str, Enum):
+class PurchaseStatus(str, Enum):
     PENDING = "PENDING"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
 
 
-class Sale(Base):
-    __tablename__ = "sales"
+class Purchase(Base):
+    __tablename__ = "purchases"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    client_id: Mapped[uuid.UUID] = mapped_column(
+    supplier_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("clients.id", ondelete="RESTRICT"),
-        nullable=False,
+        ForeignKey("suppliers.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
-    # Total monetary value of the sale (sum of unit_price * quantity for all items)
+    # Total monetary value of the purchase (sum of unit_price * quantity for all items)
     total_amount: Mapped[float] = mapped_column(
         Numeric(precision=12, scale=4), nullable=False, default=0
     )
-    status: Mapped[SaleStatus] = mapped_column(
-        SAEnum(SaleStatus, name="salestatus", create_type=True),
+    status: Mapped[PurchaseStatus] = mapped_column(
+        SAEnum(PurchaseStatus, name="purchasestatus", create_type=True),
         nullable=False,
-        default=SaleStatus.COMPLETED,
+        default=PurchaseStatus.COMPLETED,
         index=True,
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sale_date: Mapped[datetime] = mapped_column(
+    purchase_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
 
     # Relationships
-    client: Mapped["Client"] = relationship(  # type: ignore[name-defined]  # noqa: F821
-        "Client", back_populates="sales", lazy="noload"
+    supplier: Mapped["Supplier"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Supplier", back_populates="purchases", lazy="noload"
     )
-    items: Mapped[list["SaleItem"]] = relationship(
-        "SaleItem",
-        back_populates="sale",
+    items: Mapped[list["PurchaseItem"]] = relationship(
+        "PurchaseItem",
+        back_populates="purchase",
         cascade="all, delete-orphan",
         lazy="noload",
     )
 
     def __repr__(self) -> str:
-        return f"<Sale id={self.id} client={self.client_id} total={self.total_amount}>"
+        return f"<Purchase id={self.id} supplier={self.supplier_id} total={self.total_amount}>"
 
 
-class SaleItem(Base):
-    __tablename__ = "sale_items"
+class PurchaseItem(Base):
+    __tablename__ = "purchase_items"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    sale_id: Mapped[uuid.UUID] = mapped_column(
+    purchase_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("sales.id", ondelete="CASCADE"),
+        ForeignKey("purchases.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -90,10 +89,10 @@ class SaleItem(Base):
     )
 
     # Relationships
-    sale: Mapped["Sale"] = relationship("Sale", back_populates="items", lazy="noload")
+    purchase: Mapped["Purchase"] = relationship("Purchase", back_populates="items", lazy="noload")
     product: Mapped["Product"] = relationship(  # type: ignore[name-defined]  # noqa: F821
-        "Product", back_populates="sale_items", lazy="noload"
+        "Product", back_populates="purchase_items", lazy="noload"
     )
 
     def __repr__(self) -> str:
-        return f"<SaleItem sale={self.sale_id} product={self.product_id} qty={self.quantity}>"
+        return f"<PurchaseItem purchase={self.purchase_id} product={self.product_id} qty={self.quantity}>"

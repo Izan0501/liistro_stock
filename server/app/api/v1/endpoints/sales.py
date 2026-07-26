@@ -6,6 +6,7 @@ Sale endpoints — creation triggers the full ACID transaction.
 from __future__ import annotations
 
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,14 +30,18 @@ def _sale_to_response(sale: object) -> SaleResponse:
     from app.models.sale import Sale  # local import to avoid circular
 
     s: Sale = sale  # type: ignore[assignment]
+    c_name = s.client.name if getattr(s, "client", None) else None
+    
     return SaleResponse(
         id=s.id,
         client_id=s.client_id,
+        client_name=c_name,
         total_amount=s.total_amount,  # type: ignore[arg-type]
+        total_items=sum(i.quantity for i in s.items) if getattr(s, "items", None) else 0,
         status=s.status,
         notes=s.notes,
         sale_date=s.sale_date,
-        items=[SaleItemResponse.from_orm(item) for item in s.items],
+        items=[SaleItemResponse.from_orm(item) for item in s.items] if getattr(s, "items", None) else [],
     )
 
 
@@ -57,6 +62,7 @@ async def create_sale(
     - Creates Sale + SaleItems
     - Deducts product quantities
     - Writes StockMovement (OUT) audit entries
+    - Updates FinancialConfig capital
     All-or-nothing: any failure rolls back the entire transaction.
     """
     sale = await sale_service.create_sale(db, payload)
@@ -67,20 +73,25 @@ async def create_sale(
     "",
     response_model=SaleListResponse,
     status_code=status.HTTP_200_OK,
-    summary="List sales (optionally filtered by client)",
+    summary="Delivery history — list sales with optional date and client filters",
 )
 async def list_sales(
-    client_id: uuid.UUID | None = Query(None),
+    client_id: uuid.UUID | None = Query(None, description="Filter by client UUID"),
+    start_date: date | None = Query(None, description="ISO 8601 start date (inclusive), e.g. 2025-07-01"),
+    end_date: date | None = Query(None, description="ISO 8601 end date (inclusive), e.g. 2025-07-31"),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> SaleListResponse:
-    total, items = await sale_service.list_sales(db, client_id, offset, limit)
-    return SaleListResponse(
-        total=total,
-        items=[_sale_to_response(s) for s in items],
+    """
+    Returns paginated sales ordered newest-first.
+    Each item includes client_name and total_items for delivery history cards.
+    """
+    total, items = await sale_service.list_sales(
+        db, client_id, start_date, end_date, offset, limit
     )
+    return SaleListResponse(total=total, items=items)
 
 
 @router.get(

@@ -1,11 +1,12 @@
 """
 api/v1/endpoints/dashboard.py
-Financial dashboard endpoints — serves aggregated KPIs and chart data.
+Dashboard endpoints — revamped for Inventory & Stock Management focus.
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from datetime import date
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_current_user
@@ -13,63 +14,46 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.dashboard import (
     DashboardMetricsResponse,
-    DashboardSummaryResponse,
-    FinancialConfigUpdateRequest,
+    RecentActivity,
 )
-from app.services import dashboard_service
+from app.services import analytics_service
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+router = APIRouter()
 
 
 @router.get(
     "/metrics",
     response_model=DashboardMetricsResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get core dashboard metrics",
+    summary="Get 4 absolute KPIs for the dashboard",
 )
 async def get_dashboard_metrics(
+    start_date: date | None = Query(None, description="ISO 8601 start date (inclusive)"),
+    end_date: date | None = Query(None, description="ISO 8601 end date (inclusive)"),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> DashboardMetricsResponse:
     """
-    Returns core metrics for the dashboard:
-    - starting_capital
-    - total_products_count
-    - active_clients
-    - total_stock_valuation
+    Returns exactly:
+    - sales_revenue: Total amount from sales.
+    - total_clients: Count of active clients.
+    - total_products_stored: The absolute sum of all available_quantity across all products.
+    - total_deliveries: Count of total sales/deliveries made.
     """
-    return await dashboard_service.get_dashboard_metrics(db)
+    return await analytics_service.get_dashboard_metrics(db, start_date, end_date)
 
 
 @router.get(
-    "",
-    response_model=DashboardSummaryResponse,
+    "/recent-activity",
+    response_model=list[RecentActivity],
     status_code=status.HTTP_200_OK,
-    summary="Get full dashboard KPI summary",
+    summary="Get 10 most recent activities (Sales and Purchases)",
 )
-async def get_dashboard(
+async def get_recent_activity(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
-) -> DashboardSummaryResponse:
+) -> list[RecentActivity]:
     """
-    Returns:
-    - Net capital (initial + revenue - expenses)
-    - Monthly revenue/expense trend (last 12 months)
-    - Top 10 products by quantity sold
-    - Low stock count, total clients, sales count
+    Returns a unified list sorted by timestamp descending of latest sales and purchases.
     """
-    return await dashboard_service.get_dashboard_summary(db)
-
-
-@router.patch(
-    "/capital",
-    status_code=status.HTTP_200_OK,
-    summary="Update initial business capital",
-)
-async def update_capital(
-    payload: FinancialConfigUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
-) -> dict:
-    config = await dashboard_service.update_initial_capital(db, payload)
-    return {"initial_capital": str(config.initial_capital)}
+    return await analytics_service.get_recent_activity(db)

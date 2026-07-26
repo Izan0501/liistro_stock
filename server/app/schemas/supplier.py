@@ -13,17 +13,26 @@ from pydantic import BaseModel, Field
 
 class SupplierCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
+    email: str | None = Field(None, max_length=255)
+    phone: str | None = Field(None, max_length=50)
+    contact_person: str | None = Field(None, max_length=200)
     contact_info: str | None = Field(None, max_length=1000)
 
 
 class SupplierUpdateRequest(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
+    email: str | None = Field(None, max_length=255)
+    phone: str | None = Field(None, max_length=50)
+    contact_person: str | None = Field(None, max_length=200)
     contact_info: str | None = Field(None, max_length=1000)
 
 
 class SupplierResponse(BaseModel):
     id: uuid.UUID
     name: str
+    email: str | None = None
+    phone: str | None = None
+    contact_person: str | None = None
     contact_info: str | None
     created_at: datetime
 

@@ -41,6 +41,7 @@ from app.models.supplier import Supplier  # noqa: E402, F401
 from app.models.product import Product  # noqa: E402, F401
 from app.models.stock_movement import StockMovement  # noqa: E402, F401
 from app.models.sale import Sale, SaleItem  # noqa: E402, F401
+from app.models.purchase import Purchase, PurchaseItem  # noqa: E402, F401
 from app.models.financial_config import FinancialConfig  # noqa: E402, F401
 
 # ── Alembic config ────────────────────────────────────────────────────────────

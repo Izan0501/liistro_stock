@@ -7,17 +7,23 @@ and deliver sub-50ms responses on indexed columns.
 
 from __future__ import annotations
 
+import uuid
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import case, extract, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import BadRequestError
 from app.models.client import Client
 from app.models.financial_config import FinancialConfig
 from app.models.product import Product
 from app.models.sale import Sale, SaleItem, SaleStatus
 from app.models.stock_movement import MovementType, StockMovement
 from app.schemas.dashboard import (
+    CapitalAdjustRequest,
+    CapitalResponse,
+    ChartDataPoint,
     DashboardMetricsResponse,
     DashboardSummaryResponse,
     FinancialConfigUpdateRequest,
@@ -31,7 +37,6 @@ async def _get_or_create_financial_config(db: AsyncSession) -> FinancialConfig:
     result = await db.execute(select(FinancialConfig).limit(1))
     config = result.scalar_one_or_none()
     if not config:
-        import uuid
         config = FinancialConfig(id=uuid.uuid4(), initial_capital=Decimal("0.0000"))
         db.add(config)
         await db.commit()
@@ -39,30 +44,199 @@ async def _get_or_create_financial_config(db: AsyncSession) -> FinancialConfig:
     return config
 
 
-async def get_dashboard_metrics(db: AsyncSession) -> DashboardMetricsResponse:
+def _current_month_bounds() -> tuple[date, date]:
+    """Return the first and last day of the current calendar month."""
+    today = date.today()
+    first = today.replace(day=1)
+    # Advance to first day of next month, subtract one day
+    if today.month == 12:
+        last = today.replace(year=today.year + 1, month=1, day=1)
+    else:
+        last = today.replace(month=today.month + 1, day=1)
+    last = last - timedelta(days=1)
+    return first, last
+
+
+def _day_bounds(d: date) -> tuple[datetime, datetime]:
+    """Return UTC start-of-day and end-of-day datetimes for a given date."""
+    start = datetime(d.year, d.month, d.day, 0, 0, 0, tzinfo=timezone.utc)
+    end   = datetime(d.year, d.month, d.day, 23, 59, 59, 999999, tzinfo=timezone.utc)
+    return start, end
+
+
+async def get_dashboard_metrics(
+    db: AsyncSession,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> DashboardMetricsResponse:
     """
-    Compute and return core metrics for the dashboard.
+    Compute core dashboard metrics with optional date filtering.
+
+    Cards scoped to [start_date, end_date] (defaults: current calendar month).
+    starting_capital and total_stock_valuation are always absolute snapshots.
+    chart_data groups daily income/expense within the range for Recharts.
     """
+    # ── Resolve date range ────────────────────────────────────────────────────
+    if start_date is None or end_date is None:
+        default_start, default_end = _current_month_bounds()
+        start_date = start_date or default_start
+        end_date   = end_date   or default_end
+
+    # Convert dates to timezone-aware datetimes for PostgreSQL comparisons
+    range_start = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0, tzinfo=timezone.utc)
+    range_end   = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, tzinfo=timezone.utc)
+
+    # ── Always-absolute metrics ───────────────────────────────────────────────
     config = await _get_or_create_financial_config(db)
     starting_capital = Decimal(str(config.initial_capital))
 
     total_products_count: int = await db.scalar(select(func.count(Product.id))) or 0
-    active_clients: int = await db.scalar(select(func.count(Client.id))) or 0
 
     total_stock_valuation: Decimal = await db.scalar(
-        select(
-            func.coalesce(
-                func.sum(Product.available_quantity * Product.buy_price), 0
-            )
-        )
+        select(func.coalesce(func.sum(Product.available_quantity * Product.buy_price), 0))
     ) or Decimal("0")
     total_stock_valuation = Decimal(str(total_stock_valuation))
+
+    # ── Range-scoped card metrics ─────────────────────────────────────────────
+    period_income: Decimal = await db.scalar(
+        select(func.coalesce(func.sum(Sale.total_amount), 0))
+        .where(
+            Sale.status == SaleStatus.COMPLETED,
+            Sale.sale_date >= range_start,
+            Sale.sale_date <= range_end,
+        )
+    ) or Decimal("0")
+    period_income = Decimal(str(period_income))
+
+    period_sales_count: int = await db.scalar(
+        select(func.count(Sale.id))
+        .where(
+            Sale.status == SaleStatus.COMPLETED,
+            Sale.sale_date >= range_start,
+            Sale.sale_date <= range_end,
+        )
+    ) or 0
+
+    # COUNT of distinct clients who had at least one sale in the range
+    active_clients: int = await db.scalar(
+        select(func.count(func.distinct(Sale.client_id)))
+        .where(
+            Sale.status == SaleStatus.COMPLETED,
+            Sale.sale_date >= range_start,
+            Sale.sale_date <= range_end,
+        )
+    ) or 0
+
+    # ── Daily chart data (income + expense per calendar day) ─────────────────
+    # Income: completed sales grouped by day
+    income_rows = await db.execute(
+        select(
+            func.to_char(Sale.sale_date, "YYYY-MM-DD").label("day"),
+            func.coalesce(func.sum(Sale.total_amount), 0).label("income"),
+        )
+        .where(
+            Sale.status == SaleStatus.COMPLETED,
+            Sale.sale_date >= range_start,
+            Sale.sale_date <= range_end,
+        )
+        .group_by(text("day"))
+        .order_by(text("day"))
+    )
+    income_map: dict[str, Decimal] = {
+        row.day: Decimal(str(row.income)) for row in income_rows
+    }
+
+    # Expense: restock IN movements grouped by day
+    expense_rows = await db.execute(
+        select(
+            func.to_char(StockMovement.movement_date, "YYYY-MM-DD").label("day"),
+            func.coalesce(
+                func.sum(StockMovement.quantity * StockMovement.unit_price), 0
+            ).label("expense"),
+        )
+        .where(
+            StockMovement.movement_type == MovementType.IN,
+            StockMovement.movement_date >= range_start,
+            StockMovement.movement_date <= range_end,
+        )
+        .group_by(text("day"))
+        .order_by(text("day"))
+    )
+    expense_map: dict[str, Decimal] = {
+        row.day: Decimal(str(row.expense)) for row in expense_rows
+    }
+
+    all_days = sorted(set(income_map.keys()) | set(expense_map.keys()))
+    chart_data: list[ChartDataPoint] = [
+        ChartDataPoint(
+            date=d,
+            income=income_map.get(d, Decimal("0")),
+            expense=expense_map.get(d, Decimal("0")),
+        )
+        for d in all_days
+    ]
 
     return DashboardMetricsResponse(
         starting_capital=starting_capital,
         total_products_count=total_products_count,
+        period_start=start_date,
+        period_end=end_date,
+        period_income=period_income,
+        period_sales_count=period_sales_count,
         active_clients=active_clients,
         total_stock_valuation=total_stock_valuation,
+        chart_data=chart_data,
+    )
+
+
+async def get_capital(db: AsyncSession) -> CapitalResponse:
+    """Return the current capital state."""
+    config = await _get_or_create_financial_config(db)
+    return CapitalResponse(
+        initial_capital=Decimal(str(config.initial_capital)),
+        updated_at=config.updated_at.isoformat(),
+    )
+
+
+async def adjust_capital(
+    db: AsyncSession, payload: CapitalAdjustRequest
+) -> CapitalResponse:
+    """
+    Manually add or subtract liquidity from the FinancialConfig.
+    Transactional — rolls back on any error.
+    Raises BadRequestError if a subtract would take capital below zero.
+    """
+    try:
+        result = await db.execute(select(FinancialConfig).limit(1).with_for_update())
+        config = result.scalar_one_or_none()
+        if config is None:
+            config = FinancialConfig(id=uuid.uuid4(), initial_capital=Decimal("0.0000"))
+            db.add(config)
+            await db.flush()
+
+        current = Decimal(str(config.initial_capital))
+        amount = Decimal(str(payload.amount))
+
+        if payload.operation == "add":
+            config.initial_capital = current + amount
+        else:
+            if amount > current:
+                raise BadRequestError(
+                    f"Cannot subtract {amount} from capital {current} — would go negative."
+                )
+            config.initial_capital = current - amount
+
+        db.add(config)
+        await db.commit()
+        await db.refresh(config)
+
+    except Exception:
+        await db.rollback()
+        raise
+
+    return CapitalResponse(
+        initial_capital=Decimal(str(config.initial_capital)),
+        updated_at=config.updated_at.isoformat(),
     )
 
 
@@ -83,7 +257,6 @@ async def get_dashboard_summary(db: AsyncSession) -> DashboardSummaryResponse:
     total_revenue = Decimal(str(total_revenue))
 
     # ── Total Restock Expenses ──────────────────────────────────────────────
-    # Restock expense = SUM(quantity * unit_price) for all IN movements
     total_expenses: Decimal = await db.scalar(
         select(
             func.coalesce(
@@ -93,14 +266,12 @@ async def get_dashboard_summary(db: AsyncSession) -> DashboardSummaryResponse:
     ) or Decimal("0")
     total_expenses = Decimal(str(total_expenses))
 
-    # ── Net Capital ─────────────────────────────────────────────────────────
     net_capital = initial_capital + total_revenue - total_expenses
 
     # ── Counts ──────────────────────────────────────────────────────────────
     total_sales_count: int = await db.scalar(
         select(func.count(Sale.id)).where(Sale.status == SaleStatus.COMPLETED)
     ) or 0
-
     total_clients_count: int = await db.scalar(select(func.count(Client.id))) or 0
     total_products_count: int = await db.scalar(select(func.count(Product.id))) or 0
     low_stock_count: int = await db.scalar(

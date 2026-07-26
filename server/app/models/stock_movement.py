@@ -28,10 +28,10 @@ class StockMovement(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    product_id: Mapped[uuid.UUID] = mapped_column(
+    product_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("products.id", ondelete="RESTRICT"),
-        nullable=False,
+        ForeignKey("products.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     # Nullable — sales do not have a direct supplier link
@@ -45,6 +45,13 @@ class StockMovement(Base):
     sale_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("sales.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Nullable — links back to the purchase that triggered this IN movement
+    purchase_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("purchases.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -65,6 +72,9 @@ class StockMovement(Base):
     )
     supplier: Mapped["Supplier | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "Supplier", back_populates="stock_movements", lazy="noload"
+    )
+    purchase: Mapped["Purchase | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Purchase", lazy="noload"
     )
 
     def __repr__(self) -> str:

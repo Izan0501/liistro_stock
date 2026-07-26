@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, Numeric, String, func
+from sqlalchemy import DateTime, Integer, Numeric, String, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,6 +25,13 @@ class Product(Base):
         default=uuid.uuid4,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    supplier_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("suppliers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Quantity stored as Integer; fractions not needed for Rodrigo's distribution
     available_quantity: Mapped[int] = mapped_column(
@@ -49,6 +56,12 @@ class Product(Base):
     )
     sale_items: Mapped[list["SaleItem"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "SaleItem", back_populates="product", lazy="noload"
+    )
+    purchase_items: Mapped[list["PurchaseItem"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "PurchaseItem", back_populates="product", lazy="noload"
+    )
+    supplier: Mapped["Supplier | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Supplier", back_populates="products", lazy="noload"
     )
 
     def __repr__(self) -> str:

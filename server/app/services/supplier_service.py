@@ -21,6 +21,9 @@ async def create_supplier(
     supplier = Supplier(
         id=uuid.uuid4(),
         name=payload.name,
+        email=payload.email,
+        phone=payload.phone,
+        contact_person=payload.contact_person,
         contact_info=payload.contact_info,
     )
     db.add(supplier)
