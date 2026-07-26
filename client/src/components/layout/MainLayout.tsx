@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, Package, Search, Bell, LogOut, User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Bell, LogOut, User as UserIcon, ChevronLeft, ChevronRight, History, Truck, Zap, ChevronDown, PackagePlus, TrendingUp } from 'lucide-react';
+import { GlassFilter, GlassDock } from '../ui/LiquidDock';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -27,11 +28,14 @@ export default function MainLayout() {
   const navItems = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Sales', to: '/sales', icon: ShoppingCart },
+    { name: 'Deliveries', to: '/deliveries', icon: History },
+    { name: 'Purchases', to: '/purchases', icon: Truck },
     { name: 'Inventory', to: '/inventory', icon: Package },
   ];
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-obsidian text-text-primary">
+    <div className="flex h-screen bg-slate-950 text-text-primary overflow-hidden selection:bg-accent-indigo/30">
+      <GlassFilter />
       {/* Desktop Sidebar */}
       <aside 
         className={cn(
@@ -108,14 +112,85 @@ export default function MainLayout() {
             <div className="w-8 h-8 rounded bg-accent-indigo flex items-center justify-center text-white font-bold">L</div>
           </div>
           
-          <div className="hidden md:flex flex-1 max-w-md">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-              <input 
-                type="text" 
-                placeholder="Search anything (Ctrl+K)..." 
-                className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-accent-indigo transition-colors"
-              />
+          <div className="hidden md:flex flex-1 max-w-md items-center justify-start pl-4">
+            {/* Quick Actions Premium Dropdown */}
+            <div className="relative group">
+              {/* Trigger Button */}
+              <button className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-200 transition-all duration-300 bg-slate-900/50 border border-slate-800 rounded-full hover:bg-slate-800 hover:border-indigo-500/50 hover:text-white hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+                <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                Acciones Rápidas
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform duration-300 group-hover:rotate-180" />
+              </button>
+
+              {/* Transparent bridge so mouse doesn't leave hover zone */}
+              <div className="absolute top-full left-0 w-full h-3 pt-3" />
+
+              {/* Dropdown Panel */}
+              <div className="absolute left-0 top-full mt-3 w-72 origin-top-left rounded-2xl border border-slate-800 bg-slate-950/90 p-2 shadow-2xl backdrop-blur-xl opacity-0 invisible scale-95 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:scale-100 z-50">
+                {/* Section header */}
+                <div className="px-3 pb-2 pt-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Acciones</span>
+                </div>
+
+                {/* Nueva Venta */}
+                <button
+                  onClick={() => navigate('/sales')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-indigo-500/30 group-hover/item:bg-indigo-500/10 group-hover/item:text-indigo-400">
+                    <ShoppingCart className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Nueva Venta</span>
+                    <span className="text-xs text-slate-500">Registrar salida de stock</span>
+                  </div>
+                </button>
+
+                {/* Nuevo Restock */}
+                <button
+                  onClick={() => navigate('/purchases')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-emerald-500/30 group-hover/item:bg-emerald-500/10 group-hover/item:text-emerald-400">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Nueva Compra</span>
+                    <span className="text-xs text-slate-500">Registrar entrada de proveedor</span>
+                  </div>
+                </button>
+
+                {/* Agregar Producto */}
+                <button
+                  onClick={() => navigate('/inventory')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-violet-500/30 group-hover/item:bg-violet-500/10 group-hover/item:text-violet-400">
+                    <PackagePlus className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Agregar Producto</span>
+                    <span className="text-xs text-slate-500">Crear nuevo ítem en inventario</span>
+                  </div>
+                </button>
+
+                {/* Divider */}
+                <div className="my-1 mx-3 border-t border-slate-800/80" />
+
+                {/* Ver Dashboard */}
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-amber-500/30 group-hover/item:bg-amber-500/10 group-hover/item:text-amber-400">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Ver Dashboard</span>
+                    <span className="text-xs text-slate-500">Resumen de métricas del negocio</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -146,7 +221,7 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto bg-black/40">
+        <div className="flex-1 overflow-auto bg-black/40 pb-32 md:pb-6">
           <Outlet />
         </div>
       </main>
@@ -187,26 +262,8 @@ export default function MainLayout() {
         </div>
       )}
 
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glassmorphism border-t border-white/5 pb-safe z-20">
-        <div className="flex justify-around items-center h-16 px-2">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  "flex flex-col items-center justify-center w-full h-full gap-1 text-xs font-medium transition-colors",
-                  isActive ? "text-accent-indigo" : "text-text-secondary"
-                )
-              }
-            >
-              <item.icon className="w-6 h-6" />
-              {item.name}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      {/* Mobile Bottom Nav is now powered by Liquid Glass Dock */}
+      <GlassDock />
     </div>
   );
 }

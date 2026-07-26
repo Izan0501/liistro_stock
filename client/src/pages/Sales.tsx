@@ -5,6 +5,7 @@ import { useClients, useProducts } from '../hooks/useData';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { Confetti } from '../components/ui/confetti';
+import { HoverButton } from '../components/ui/HoverButton';
 
 export default function Sales() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -192,14 +193,16 @@ export default function Sales() {
                     >
                       Cancel
                     </button>
-                    <button 
+                    <HoverButton
                       type="submit"
                       disabled={createClientMutation.isPending}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] disabled:opacity-50"
+                      className="flex-1"
+                      glowColor="#6366f1"
+                      backgroundColor="#0f172a"
                     >
                       {createClientMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                       Save Client
-                    </button>
+                    </HoverButton>
                   </div>
                 </form>
               </div>
@@ -282,22 +285,22 @@ export default function Sales() {
           </div>
 
           {/* Checkout Bar (Floating on mobile) */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-slate-900/90 backdrop-blur-lg border-t border-white/5 pb-safe z-30 md:relative md:bg-transparent md:border-0 md:p-0 md:pt-4">
+          <div className="absolute bottom-0 left-0 right-0 p-4 pb-28 md:p-6 bg-slate-900/90 backdrop-blur-lg border-t border-white/5 z-30 md:relative md:bg-transparent md:border-0 md:p-0 md:pt-4">
             <button 
               onClick={handleCreateSale}
               disabled={cart.length === 0 || createSaleMutation.isPending}
               className={cn(
-                "w-full flex items-center justify-between py-4 px-6 rounded-xl font-bold text-lg transition-all",
+                "w-full flex items-center justify-between py-4 px-6 rounded-2xl font-semibold text-lg transition-all duration-300",
                 cart.length > 0 && !createSaleMutation.isPending
-                  ? "bg-accent-emerald text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:brightness-110" 
-                  : "bg-white/10 text-text-secondary cursor-not-allowed"
+                  ? "bg-emerald-600/10 border border-emerald-500/50 text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] hover:bg-emerald-600/20" 
+                  : "bg-white/5 border border-white/10 text-text-secondary cursor-not-allowed"
               )}
             >
               <span className="flex items-center gap-2">
                 {createSaleMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShoppingBag className="w-5 h-5" />}
                 {createSaleMutation.isPending ? "Confirming..." : "Confirm Sale"}
               </span>
-              <span>${total}</span>
+              <span className="font-bold tracking-tight">${total}</span>
             </button>
           </div>
         </div>

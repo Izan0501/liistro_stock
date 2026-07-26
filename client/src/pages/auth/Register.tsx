@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { HoverButton } from '../../components/ui/HoverButton';
 
 export default function Register() {
   const { login } = useAuth();
@@ -130,14 +131,16 @@ export default function Register() {
               />
             </div>
             
-            <button 
-              type="submit" 
+            <HoverButton
+              type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-lg font-bold bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:brightness-110 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full mt-4"
+              glowColor="#6366f1"
+              backgroundColor="#0f172a"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
               {loading ? 'Initializing...' : 'Initialize System'}
-            </button>
+            </HoverButton>
           </form>
 
           <p className="text-center text-sm text-text-secondary mt-6">

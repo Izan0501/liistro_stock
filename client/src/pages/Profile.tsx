@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Loader2, User as UserIcon, Lock, Save } from 'lucide-react';
+import { HoverButton } from '../components/ui/HoverButton';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -173,14 +174,16 @@ export default function Profile() {
               />
             </div>
             
-            <button 
-              type="submit" 
+            <HoverButton
+              type="submit"
               disabled={loadingPassword}
-              className="w-full py-3 rounded-lg font-bold bg-accent-indigo text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:brightness-110 transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full mt-2"
+              glowColor="#6366f1"
+              backgroundColor="#0f172a"
             >
               {loadingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
               {loadingPassword ? 'Actualizando...' : 'Actualizar Contraseña'}
-            </button>
+            </HoverButton>
           </form>
         </div>
       </div>

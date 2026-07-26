@@ -9,6 +9,9 @@
   --color-accent-violet: #8b5cf6;
   --color-accent-emerald: #10b981;
   --color-accent-red: #ef4444;
+  
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
 
   --color-text-primary: #f8fafc;
   --color-text-secondary: #94a3b8;
@@ -45,3 +48,5 @@
     text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
   }
 }
+
+

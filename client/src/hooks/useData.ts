@@ -3,16 +3,32 @@ import { api } from '../services/api';
 
 const getAuthToken = () => localStorage.getItem('access_token');
 
-export const useDashboardMetrics = () => {
+export const useDashboardMetrics = (dateRange?: { start: string; end: string }) => {
   return useQuery({
-    queryKey: ['dashboardMetrics'],
+    queryKey: ['dashboardMetrics', dateRange],
     queryFn: async () => {
-      // Trying the /dashboard/metrics endpoint first, assuming standard REST
-      const { data } = await api.get('/dashboard/metrics');
-      return data;
+      const params = new URLSearchParams();
+      if (dateRange?.start && dateRange.start.trim() !== '') params.append('start_date', dateRange.start);
+      if (dateRange?.end && dateRange.end.trim() !== '') params.append('end_date', dateRange.end);
+      
+      const queryString = params.toString();
+      const url = queryString ? `/dashboard/metrics?${queryString}` : '/dashboard/metrics';
+      try {
+        const { data } = await api.get(url);
+        return data;
+      } catch (error) {
+        console.warn('Dashboard metrics API error (fallback applied):', error);
+        return {
+          total_sales_revenue: 0,
+          total_clients_count: 0,
+          total_products_count: 0,
+          total_sales_count: 0,
+          monthly_revenue: [],
+          top_products: []
+        };
+      }
     },
     enabled: !!getAuthToken(),
-    // We expect the backend to return starting capital ($5M), inventory valuation, supplier counts, etc.
   });
 };
 
@@ -27,12 +43,98 @@ export const useProducts = () => {
   });
 };
 
+export const useSuppliers = () => {
+  return useQuery({
+    queryKey: ['suppliers'],
+    queryFn: async () => {
+      const { data } = await api.get('/suppliers');
+      return data;
+    },
+    enabled: !!getAuthToken(),
+  });
+};
+
 export const useClients = () => {
   return useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
       const { data } = await api.get('/clients');
       return data;
+    },
+    enabled: !!getAuthToken(),
+  });
+};
+
+export const useSales = (dateRange?: { start: string; end: string }) => {
+  return useQuery({
+    queryKey: ['sales', dateRange],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange?.start && dateRange.start.trim() !== '') params.append('start_date', dateRange.start);
+      if (dateRange?.end && dateRange.end.trim() !== '') params.append('end_date', dateRange.end);
+      
+      const queryString = params.toString();
+      const url = queryString ? `/sales?${queryString}` : '/sales';
+      const { data } = await api.get(url);
+      return data;
+    },
+    enabled: !!getAuthToken(),
+  });
+};
+
+export const usePurchases = (dateRange?: { start: string; end: string }) => {
+  return useQuery({
+    queryKey: ['purchases', dateRange],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange?.start && dateRange.start.trim() !== '') params.append('start_date', dateRange.start);
+      if (dateRange?.end && dateRange.end.trim() !== '') params.append('end_date', dateRange.end);
+      
+      const queryString = params.toString();
+      const url = queryString ? `/purchases?${queryString}` : '/purchases';
+      const { data } = await api.get(url);
+      return data;
+    },
+    enabled: !!getAuthToken(),
+  });
+};
+
+export const useFinancialChartData = () => {
+  return useQuery({
+    queryKey: ['financialChartData'],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get('/analytics/chart-data');
+        return data;
+      } catch (error) {
+        console.warn('Chart data API error:', error);
+        return {
+          metrics: {
+            currentBalance: 0,
+            todaysPnL: 0,
+            pnlPercentage: 0,
+            highValue: 0,
+            lowValue: 0,
+          },
+          chartData: []
+        };
+      }
+    },
+    enabled: !!getAuthToken(),
+  });
+};
+
+export const useRecentActivity = () => {
+  return useQuery({
+    queryKey: ['recentActivity'],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get('/dashboard/recent-activity');
+        return data;
+      } catch (error) {
+        console.warn('Recent activity API error (fallback applied):', error);
+        return [];
+      }
     },
     enabled: !!getAuthToken(),
   });
