@@ -1,55 +1,87 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import { Loader2, ArrowRight } from 'lucide-react';
-import { HoverButton } from '../../components/ui/HoverButton';
+import { Loader2, ArrowRight, BarChart3, Package, TrendingUp } from 'lucide-react';
+import { AppInput } from '../../components/ui/AppInput';
 
+// ─── Animated submit button ───────────────────────────────────────────────────
+const SubmitButton = ({ loading, label }: { loading: boolean; label: string }) => (
+  <button
+    type="submit"
+    disabled={loading}
+    className="group relative w-full overflow-hidden rounded-xl bg-indigo-600 px-6 py-3.5 font-semibold text-white transition-all duration-300 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    {/* Skew shine on hover */}
+    <span className="absolute inset-0 -translate-x-full skew-x-12 bg-white/10 transition-transform duration-500 group-hover:translate-x-full" />
+    <span className="relative flex items-center justify-center gap-2 text-sm">
+      {loading ? (
+        <Loader2 className="w-5 h-5 animate-spin" />
+      ) : (
+        <>
+          {label}
+          <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+        </>
+      )}
+    </span>
+  </button>
+);
+
+// ─── Floating stat badge ──────────────────────────────────────────────────────
+const StatBadge = ({ icon: Icon, label, value, color }: any) => (
+  <div className="relative z-10 flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-4 py-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-xl">
+    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
+      <Icon className="w-4 h-4 text-white" />
+    </div>
+    <div>
+      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-sm font-bold text-slate-950 dark:text-white">{value}</div>
+    </div>
+  </div>
+);
+
+// ─── Main Login Page ──────────────────────────────────────────────────────────
 export default function Login() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(''); 
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Cursor-tracking glow state
+  const formWrapperRef = useRef<HTMLDivElement>(null);
+  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!formWrapperRef.current) return;
+    const rect = formWrapperRef.current.getBoundingClientRect();
+    setGlowPos({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
-      // Backend expects JSON according to OpenAPI schema
-      const payload = {
-        email: email,
-        password: password
-      };
-      
+      const payload = { email, password };
       const response = await api.post('/auth/login', payload);
       const { access_token } = response.data;
-      
-      // Set token temporarily in localStorage so interceptor injects it for the /auth/me call
+
       localStorage.setItem('access_token', access_token);
-      
-      // Dynamically fetch the current user profile
       const userResponse = await api.get('/auth/me');
       const user = userResponse.data;
-      
       login(access_token, user);
     } catch (err: any) {
       console.error(err);
-      
-      // Safely extract error message (FastAPI 422 returns an array in detail)
       const detail = err.response?.data?.detail;
       let errorMessage = 'Failed to login. Check your credentials.';
-      
-      if (typeof detail === 'string') {
-        errorMessage = detail;
-      } else if (Array.isArray(detail)) {
-        errorMessage = detail.map((d: any) => d.msg).join(', ');
-      } else if (detail) {
-        errorMessage = JSON.stringify(detail);
-      }
-      
+      if (typeof detail === 'string') errorMessage = detail;
+      else if (Array.isArray(detail)) errorMessage = detail.map((d: any) => d.msg).join(', ');
+      else if (detail) errorMessage = JSON.stringify(detail);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -57,69 +89,114 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-obsidian">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="w-14 h-14 rounded-xl bg-accent-indigo flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-[0_0_20px_rgba(99,102,241,0.4)]">
-            L
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
-          <p className="text-text-secondary mt-2">Log in to manage your stock & sales</p>
-        </div>
+    <div className="flex w-full h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
 
-        <div className="glass-card p-6 md:p-8">
-          <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <div className="bg-accent-red/10 text-accent-red px-4 py-3 rounded-lg text-sm border border-accent-red/20">
-                {error}
+      {/* ── Left: Form Panel ─────────────────────────────────────────── */}
+      <div
+        ref={formWrapperRef}
+        onMouseMove={handleMouseMove}
+        className="relative flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      >
+        {/* Background radial glow tracking cursor */}
+        <div
+          className="pointer-events-none absolute inset-0 transition-all duration-500"
+          style={{
+            background: `radial-gradient(600px circle at ${glowPos.x}% ${glowPos.y}%, rgba(99,102,241,0.08), transparent 60%)`,
+          }}
+        />
+
+        {/* Ambient gradient orbs */}
+        <div className="pointer-events-none absolute top-0 left-0 w-72 h-72 rounded-full bg-purple-500/10 blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="pointer-events-none absolute bottom-0 right-0 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl translate-x-1/2 translate-y-1/2" />
+
+        <div className="relative z-10 w-full max-w-sm">
+          {/* Logo */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-[0_0_20px_rgba(99,102,241,0.5)]">
+                L
               </div>
-            )}
-            <div>
-              <label className="text-sm font-medium text-text-secondary block mb-1.5">Email Address</label>
-              <input 
-                type="email" 
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="email"
-                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo transition-colors"
-              />
+              <span className="text-xl font-bold text-slate-950 dark:text-white tracking-tight">
+                Liistro<span className="text-slate-500 dark:text-slate-400 font-medium">Stock</span>
+              </span>
             </div>
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="text-sm font-medium text-text-secondary">Password</label>
-                <a href="#" className="text-xs text-accent-indigo hover:underline">Forgot password?</a>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Welcome back</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">Log in to manage your stock & sales</p>
+          </div>
+
+          {/* Error banner */}
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <AppInput
+              label="Email Address"
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              accentColor="indigo"
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  Password
+                </label>
+                <a href="#" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+                  Forgot password?
+                </a>
               </div>
-              <input 
-                type="password" 
+              <AppInput
+                type="password"
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo transition-colors"
+                accentColor="indigo"
               />
             </div>
-            
-            <HoverButton
-              type="submit"
-              disabled={loading}
-              className="w-full mt-4"
-              glowColor="#6366f1"
-              backgroundColor="#0f172a"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>Sign in to Dashboard <ArrowRight className="w-5 h-5" /></>
-              )}
-            </HoverButton>
+
+            <div className="pt-2">
+              <SubmitButton loading={loading} label="Sign in to Dashboard" />
+            </div>
           </form>
 
-          <p className="text-center text-sm text-text-secondary mt-6">
-            Need to register your system? <Link to="/register" className="text-accent-indigo font-medium hover:underline">Create Admin Account</Link>
+          <p className="text-center text-sm text-slate-500 mt-8">
+            Need to register your system?{' '}
+            <Link to="/register" className="text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+              Create Admin Account
+            </Link>
           </p>
         </div>
       </div>
+
+      <div className="hidden lg:block lg:w-1/2 h-screen relative overflow-hidden bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
+        {/* Hero image */}
+        <img
+          src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop"
+          alt="Warehouse operations"
+          className="absolute inset-0 w-full h-full object-cover object-center opacity-80"
+        />
+        {/* Premium Gradient Fade: Blends the seam between the form and image */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-50 dark:from-slate-950 via-slate-50/20 dark:via-slate-950/20 to-transparent z-0" />
+
+        {/* Floating stat badges */}
+        <div className="absolute inset-0 z-20 flex flex-col justify-end p-10 gap-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">
+            Your business at a glance
+          </p>
+          <StatBadge icon={BarChart3} label="Today's Revenue" value="$12,480" color="bg-indigo-600" />
+          <StatBadge icon={Package} label="Active SKUs" value="342 products" color="bg-violet-600" />
+          <StatBadge icon={TrendingUp} label="Monthly Growth" value="+18.4%" color="bg-emerald-600" />
+        </div>
+      </div>
+
     </div>
   );
 }

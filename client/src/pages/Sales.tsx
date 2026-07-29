@@ -1,11 +1,101 @@
-import { useState } from 'react';
-import { Plus, Search, MapPin, Phone, ChevronRight, ShoppingBag, Loader2, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, MapPin, Phone, Loader2, Check, Plus, Minus, ChevronRight, ShoppingBag } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useClients, useProducts } from '../hooks/useData';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { Confetti } from '../components/ui/confetti';
 import { HoverButton } from '../components/ui/HoverButton';
+import { toast } from 'sonner';
+import { useNotificationStore } from '../hooks/useNotificationStore';
+
+function HybridQuantityInput({ inCart, maxStock, onUpdate }: any) {
+  const [inputValue, setInputValue] = useState(inCart === 0 ? '' : inCart.toString());
+
+  useEffect(() => {
+    if (inCart !== parseInt(inputValue, 10)) {
+      setInputValue(inCart === 0 ? '' : inCart.toString());
+    }
+  }, [inCart]);
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    
+    // 1. Allow the user to completely clear the input WITHOUT unmounting the component
+    if (val === '') {
+      setInputValue('');
+      return; // CRITICAL: Do NOT call onUpdate(0) here.
+    }
+
+    // 2. Parse and validate
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num >= 0) {
+      // Cap at max stock
+      const safeNum = Math.min(num, maxStock);
+      setInputValue(safeNum.toString());
+      
+      // Only tell the parent if it's a valid number > 0
+      if (safeNum > 0) {
+        onUpdate(safeNum);
+      }
+    }
+  };
+
+  const handleBlur = () => {
+    const currentQty = parseInt(inputValue, 10);
+    if (isNaN(currentQty) || currentQty <= 0) {
+      setInputValue('1');
+      onUpdate(1);
+    }
+  };
+
+  if (inCart === 0) {
+    return (
+      <button 
+        onClick={() => onUpdate(1)}
+        disabled={maxStock <= 0}
+        className={cn(
+          "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg active:scale-95 transition-transform",
+          "bg-white/10 hover:bg-white/20",
+          maxStock <= 0 && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        <Plus className="w-5 h-5" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/50 w-fit">
+      <button 
+        onClick={() => onUpdate(Math.max(0, inCart - 1))}
+        className="p-2 text-slate-500 hover:text-slate-950 hover:bg-white dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 rounded-lg transition-all shadow-sm dark:shadow-none active:scale-95 disabled:opacity-50"
+      >
+        <Minus className="w-4 h-4 sm:w-5 sm:h-5"/>
+      </button>
+      
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={inputValue}
+        onChange={handleQuantityChange}
+        onBlur={handleBlur}
+        className="w-12 sm:w-16 text-center bg-transparent text-slate-950 dark:text-white font-bold text-base sm:text-lg border-none focus:ring-0 focus:outline-none selection:bg-indigo-500/30 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none m-0 p-0"
+        aria-label="Cantidad"
+      />
+      
+      <button 
+        onClick={() => onUpdate(Math.min(maxStock, inCart + 1))}
+        className="p-2 text-slate-500 hover:text-slate-950 hover:bg-white dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 rounded-lg transition-all shadow-sm dark:shadow-none active:scale-95 disabled:opacity-50"
+        disabled={inCart >= maxStock}
+      >
+        <Plus className="w-4 h-4 sm:w-5 sm:h-5"/>
+      </button>
+    </div>
+  );
+}
 
 export default function Sales() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -14,7 +104,11 @@ export default function Sales() {
   const [cart, setCart] = useState<{product: any, qty: number}[]>([]);
   const [isCreatingClient, setIsCreatingClient] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const navigate = useNavigate();
+  const { addNotification, addActivityEvent } = useNotificationStore();
   
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [newClient, setNewClient] = useState({ name: '', address: '', phone: '', company: '' });
 
   const { data: clients } = useClients();
@@ -25,6 +119,20 @@ export default function Sales() {
   const productList = Array.isArray(products) ? products : (products?.items || []);
 
   const filteredClients = clientList.filter((c: any) => c.name.toLowerCase().includes(searchClient.toLowerCase()));
+
+  const uniqueCategories = Array.from(
+    new Set(
+      productList
+        .map((p: any) => p.category)
+        .filter((cat: any) => cat && cat.toLowerCase() !== 'general')
+    )
+  ).sort() as string[];
+
+  const filteredProducts = productList.filter((product: any) => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   // Mutations
   const createClientMutation = useMutation({
@@ -45,11 +153,46 @@ export default function Sales() {
       const { data } = await api.post('/sales', payload);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
       setShowSuccessModal(true);
+
+      // ── Dispatch sale activity notification ───────────────────────────────
+      const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+      const firstItem = cart[0];
+      const saleLabel = cart.length === 1
+        ? `${firstItem.qty}x ${firstItem.product.name}`
+        : `${totalItems} artículos (${cart.length} productos)`;
+      addActivityEvent({
+        type: 'sale',
+        user: 'Terminal de Ventas',
+        message: `Venta registrada: ${saleLabel}`,
+      });
+
+      // ── Handle low-stock alerts from the backend ──────────────────────────
+      const alerts: any[] = response?.low_stock_alerts ?? [];
+      alerts.forEach((alert: any) => {
+        // Push into the global notification inbox
+        addNotification({
+          productId: alert.product_id,
+          productName: alert.product_name,
+          stock: alert.remaining_stock,
+        });
+
+        // Fire a floating toast that deep-links to Restock modal
+        toast.warning(
+          `¡Stock crítico! ${alert.product_name}: ${alert.remaining_stock} unidades`,
+          {
+            duration: 8000,
+            action: {
+              label: 'Reponer ahora',
+              onClick: () => navigate(`/inventory?restock=${alert.product_id}`),
+            },
+          }
+        );
+      });
     }
   });
 
@@ -90,26 +233,17 @@ export default function Sales() {
     setStep(2);
   };
 
-  const addToCart = (product: any) => {
-    const stock = product.available_quantity ?? product.stock ?? 0;
+
+
+  const updateQuantity = (product: any, newQty: number) => {
     setCart(prev => {
+      if (newQty <= 0) return prev.filter(item => item.product.id !== product.id);
+      
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
-        if (existing.qty >= stock) return prev;
-        return prev.map(item => item.product.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+        return prev.map(item => item.product.id === product.id ? { ...item, qty: newQty } : item);
       }
-      if (stock > 0) {
-        return [...prev, { product, qty: 1 }];
-      }
-      return prev;
-    });
-  };
-
-  const removeFromCart = (productId: number) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === productId);
-      if (existing?.qty === 1) return prev.filter(item => item.product.id !== productId);
-      return prev.map(item => item.product.id === productId ? { ...item, qty: item.qty - 1 } : item);
+      return [...prev, { product, qty: newQty }];
     });
   };
 
@@ -123,17 +257,17 @@ export default function Sales() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">New Sale</h1>
-          <p className="text-sm text-text-secondary mt-1">
-            {step === 1 ? 'Select a client to start' : `Order for ${selectedClient?.name}`}
+          <h1 className="text-2xl font-bold tracking-tight">Nueva venta</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            {step === 1 ? 'Selecciona o crea un cliente' : `Orden para ${selectedClient?.name}`}
           </p>
         </div>
         {step === 2 && (
           <button 
             onClick={() => setStep(1)}
-            className="text-sm font-medium text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-lg bg-white/5"
+            className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-950 dark:text-slate-950 dark:text-white px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5"
           >
-            Change Client
+            Cambiar Cliente
           </button>
         )}
       </div>
@@ -141,13 +275,13 @@ export default function Sales() {
       {step === 1 && (
         <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           <div className="relative shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 dark:text-slate-400" />
             <input 
               type="text" 
               placeholder="Search clients..." 
               value={searchClient}
               onChange={(e) => setSearchClient(e.target.value)}
-              className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-4 text-lg focus:outline-none focus:border-accent-indigo transition-colors"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl pl-11 pr-4 py-4 text-lg text-slate-950 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all shadow-sm"
             />
           </div>
 
@@ -162,34 +296,34 @@ export default function Sales() {
                     placeholder="Client Name" 
                     value={newClient.name}
                     onChange={e => setNewClient({ ...newClient, name: e.target.value })}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
                   />
                   <input 
                     type="text" 
                     placeholder="Company (Optional)" 
                     value={newClient.company}
                     onChange={e => setNewClient({ ...newClient, company: e.target.value })}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
                   />
                   <input 
                     type="text" 
                     placeholder="Address" 
                     value={newClient.address}
                     onChange={e => setNewClient({ ...newClient, address: e.target.value })}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
                   />
                   <input 
                     type="tel" 
                     placeholder="Phone" 
                     value={newClient.phone}
                     onChange={e => setNewClient({ ...newClient, phone: e.target.value })}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
                   />
                   <div className="flex gap-3 pt-2">
                     <button 
                       type="button"
                       onClick={() => setIsCreatingClient(false)}
-                      className="flex-1 py-3 rounded-lg font-medium bg-white/5 text-text-primary"
+                      className="flex-1 py-3 rounded-lg font-medium bg-slate-100 dark:bg-white/5 text-slate-950 dark:text-slate-950 dark:text-white"
                     >
                       Cancel
                     </button>
@@ -210,26 +344,26 @@ export default function Sales() {
               <>
                 <button 
                   onClick={() => setIsCreatingClient(true)}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-dashed border-white/20 text-accent-indigo hover:bg-accent-indigo/10 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:border-indigo-600 dark:hover:border-indigo-400 transition-all font-medium"
                 >
                   <Plus className="w-5 h-5" />
-                  <span className="font-medium">Create New Client</span>
+                  <span className="font-medium">Crear nuevo cliente</span>
                 </button>
                 
                 {filteredClients.map((client: any) => (
                   <button 
                     key={client.id}
                     onClick={() => handleSelectClient(client)}
-                    className="w-full flex items-center justify-between p-4 glass-card hover:bg-slate-800 transition-colors text-left"
+                    className="flex w-full items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer bg-white border-slate-200 text-slate-950 hover:border-indigo-500 hover:shadow-md dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:hover:border-indigo-500 text-left"
                   >
                     <div>
                       <div className="font-bold text-lg">{client.name}</div>
-                      <div className="flex items-center gap-3 mt-1.5 text-sm text-text-secondary">
+                      <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {client.address}</span>
                         <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {client.phone}</span>
                       </div>
                     </div>
-                    <ChevronRight className="w-6 h-6 text-text-secondary" />
+                    <ChevronRight className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                   </button>
                 ))}
               </>
@@ -241,12 +375,50 @@ export default function Sales() {
       {step === 2 && (
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 pb-24">
-            <h3 className="font-medium text-text-secondary sticky top-0 bg-obsidian/90 backdrop-blur pb-2 pt-1 z-10">
-              Available Products
+            <h3 className="py-3 mb-4 border-b border-slate-200 dark:border-slate-800 text-lg font-semibold text-slate-950 dark:text-white sticky top-0 bg-slate-50 dark:bg-slate-950 z-10">
+              Productos disponibles
             </h3>
+            
+            <div className="relative mb-3 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Buscar productos..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 rounded-xl pl-9 pr-4 py-2.5 text-sm transition-all shadow-sm"
+              />
+            </div>
+            
+            <div className="flex w-full gap-2 overflow-x-auto pb-2 scrollbar-hide mb-2 shrink-0">
+              <button
+                onClick={() => setSelectedCategory('All')}
+                className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+                  selectedCategory === 'All'
+                    ? 'bg-indigo-600 text-white shadow-md border-transparent'
+                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white shadow-sm'
+                )}
+              >
+                Todos
+              </button>
+              {uniqueCategories.map((category) => (
+                <button
+                  key={category as string}
+                  onClick={() => setSelectedCategory(category as string)}
+                  className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+                    selectedCategory === category
+                      ? 'bg-indigo-600 text-white shadow-md border-transparent'
+                      : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white shadow-sm'
+                  )}
+                >
+                  {category as React.ReactNode}
+                </button>
+              ))}
+            </div>
+
             {productsLoading ? (
-              <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-accent-indigo" /></div>
-            ) : productList.map((product: any) => {
+              <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400" /></div>
+            ) : filteredProducts.map((product: any) => {
               const inCart = cart.find(item => item.product.id === product.id)?.qty || 0;
               const stock = product.available_quantity ?? product.stock ?? 0;
               const price = product.sell_price ?? product.sellPrice ?? product.price ?? 0;
@@ -254,30 +426,17 @@ export default function Sales() {
                 <div key={product.id} className="glass-card p-4 flex items-center justify-between">
                   <div>
                     <div className="font-bold">{product.name}</div>
-                    <div className="text-sm text-text-secondary flex gap-3 mt-1">
-                      <span className="text-accent-emerald font-medium">${price}</span>
+                    <div className="text-sm text-slate-500 dark:text-slate-400 flex gap-3 mt-1">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">${price}</span>
                       <span>Stock: {stock - inCart}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {inCart > 0 && (
-                      <>
-                        <button 
-                          onClick={() => removeFromCart(product.id)}
-                          className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-bold text-lg active:scale-95 transition-transform"
-                        >-</button>
-                        <span className="font-bold w-6 text-center">{inCart}</span>
-                      </>
-                    )}
-                    <button 
-                      onClick={() => addToCart(product)}
-                      disabled={inCart >= stock}
-                      className={cn(
-                        "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg active:scale-95 transition-transform",
-                        inCart > 0 ? "bg-accent-indigo text-white" : "bg-white/10 hover:bg-white/20",
-                        inCart >= stock && "opacity-50 cursor-not-allowed"
-                      )}
-                    >+</button>
+                    <HybridQuantityInput 
+                      inCart={inCart} 
+                      maxStock={stock} 
+                      onUpdate={(newQty: number) => updateQuantity(product, newQty)} 
+                    />
                   </div>
                 </div>
               );
@@ -285,7 +444,7 @@ export default function Sales() {
           </div>
 
           {/* Checkout Bar (Floating on mobile) */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 pb-28 md:p-6 bg-slate-900/90 backdrop-blur-lg border-t border-white/5 z-30 md:relative md:bg-transparent md:border-0 md:p-0 md:pt-4">
+          <div className="absolute bottom-0 left-0 right-0 p-4 pb-28 md:p-6 bg-white/90 dark:bg-slate-950/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-30 md:relative md:bg-transparent md:border-0 md:p-0 md:pt-4">
             <button 
               onClick={handleCreateSale}
               disabled={cart.length === 0 || createSaleMutation.isPending}
@@ -293,7 +452,7 @@ export default function Sales() {
                 "w-full flex items-center justify-between py-4 px-6 rounded-2xl font-semibold text-lg transition-all duration-300",
                 cart.length > 0 && !createSaleMutation.isPending
                   ? "bg-emerald-600/10 border border-emerald-500/50 text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] hover:bg-emerald-600/20" 
-                  : "bg-white/5 border border-white/10 text-text-secondary cursor-not-allowed"
+                  : "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 cursor-not-allowed"
               )}
             >
               <span className="flex items-center gap-2">
@@ -325,21 +484,22 @@ export default function Sales() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
           
           {/* Modal Content */}
-          <div className="relative z-50 bg-slate-950/80 backdrop-blur-xl border border-slate-800/60 rounded-2xl w-full max-w-sm p-8 shadow-[0_0_60px_rgba(16,185,129,0.15)] animate-in zoom-in-95 duration-300 flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-accent-emerald/10 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)] border border-accent-emerald/20">
-              <CheckCircle2 className="w-10 h-10 text-accent-emerald" />
+          <div className="relative z-50 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full mx-auto shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl text-center transform transition-all animate-in zoom-in-95 duration-300">
+            {/* Success Icon Container */}
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10 mb-6 ring-8 ring-emerald-50/50 dark:ring-emerald-500/5">
+              <Check className="h-10 w-10 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
             </div>
             
-            <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
+            <h2 className="text-2xl font-bold text-slate-950 dark:text-white mb-2">
               Entrega Concretada
             </h2>
-            <p className="text-text-secondary text-sm mb-8">
-              The sale was registered successfully and the inventory has been updated.
+            <p className="text-slate-500 dark:text-slate-400 mb-8">
+              La venta se registró exitosamente y el inventario ha sido actualizado.
             </p>
             
             <button 
               onClick={handleCloseSuccess}
-              className="w-full py-3 px-6 rounded-xl font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors shadow-sm"
+              className="w-full py-3 px-4 bg-slate-950 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 font-semibold rounded-xl transition-colors shadow-md"
             >
               Nueva Venta
             </button>

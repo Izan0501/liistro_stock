@@ -1,14 +1,18 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, Package, Bell, LogOut, User as UserIcon, ChevronLeft, ChevronRight, History, Truck, Zap, ChevronDown, PackagePlus, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, LogOut, User as UserIcon, ChevronLeft, History, Truck, Zap, ChevronDown, PackagePlus, TrendingUp, Sun, Moon } from 'lucide-react';
 import { GlassFilter, GlassDock } from '../ui/LiquidDock';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
+import { NotificationBell } from '../ui/NotificationBell';
+import { Toaster } from 'sonner';
+import { useThemeStore } from '../../store/useThemeStore';
 
 export default function MainLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { theme, toggleTheme } = useThemeStore();
   
   // Persist sidebar state
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -27,33 +31,34 @@ export default function MainLayout() {
   
   const navItems = [
     { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-    { name: 'Sales', to: '/sales', icon: ShoppingCart },
-    { name: 'Deliveries', to: '/deliveries', icon: History },
-    { name: 'Purchases', to: '/purchases', icon: Truck },
-    { name: 'Inventory', to: '/inventory', icon: Package },
+    { name: 'Proveedores', to: '/purchases', icon: Truck },
+    { name: 'Inventario', to: '/inventory', icon: Package },
+    { name: 'Ventas', to: '/sales', icon: ShoppingCart },
+    { name: 'Entregas', to: '/deliveries', icon: History },
   ];
 
   return (
-    <div className="flex h-screen bg-slate-950 text-text-primary overflow-hidden selection:bg-accent-indigo/30">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white overflow-hidden selection:bg-accent-indigo/30 transition-colors duration-300">
       <GlassFilter />
       {/* Desktop Sidebar */}
       <aside 
         className={cn(
-          "hidden md:flex flex-col border-r border-white/5 bg-slate-900/50 transition-all duration-300 ease-in-out relative",
+          "hidden md:flex flex-col border-r border-slate-800 dark:border-slate-200 bg-slate-950 dark:bg-white text-white dark:text-slate-950 transition-all duration-500 ease-in-out relative z-[60] overflow-visible",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-6 w-6 h-6 bg-slate-800 border border-white/10 rounded-full flex items-center justify-center text-text-secondary hover:text-white hover:border-accent-indigo transition-colors z-20"
+          className="absolute -right-3.5 top-8 z-[100] flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 backdrop-blur-md text-slate-400 shadow-sm transition-all duration-300 ease-in-out hover:scale-110 hover:border-indigo-500 hover:text-indigo-400 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+          aria-label="Toggle Sidebar"
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          <ChevronLeft className={cn("h-4 w-4 transition-transform duration-500 ease-in-out", isCollapsed ? "rotate-180" : "rotate-0")} />
         </button>
 
-        <div className="h-16 flex items-center px-5 border-b border-white/5">
+        <div className="h-16 flex items-center px-5 mb-2">
           <div className={cn("flex items-center gap-2 text-xl font-bold tracking-tight transition-all", isCollapsed ? "justify-center w-full" : "")}>
-            <div className="min-w-[32px] w-8 h-8 rounded bg-accent-indigo flex items-center justify-center text-white">L</div>
-            {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Liistro<span className="text-text-secondary font-medium">Stock</span></span>}
+            <div className="min-w-[32px] w-8 h-8 rounded bg-indigo-600 flex items-center justify-center text-white">L</div>
+            {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Liistro<span className="text-slate-500 dark:text-slate-400 font-medium">Stock</span></span>}
           </div>
         </div>
         
@@ -67,8 +72,8 @@ export default function MainLayout() {
                   "flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative",
                   isCollapsed ? "justify-center p-3" : "px-3 py-2.5 gap-3",
                   isActive 
-                    ? "bg-accent-indigo/10 text-accent-indigo" 
-                    : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                    ? "bg-indigo-500/10 text-indigo-400 dark:bg-indigo-50 dark:text-indigo-600" 
+                    : "text-slate-400 hover:text-white hover:bg-slate-800 dark:text-slate-500 dark:hover:text-indigo-600 dark:hover:bg-slate-50"
                 )
               }
               title={isCollapsed ? item.name : undefined}
@@ -79,11 +84,11 @@ export default function MainLayout() {
           ))}
         </nav>
         
-        <div className="p-4 border-t border-white/5 space-y-2">
+        <div className="p-4 pb-6 space-y-2 mt-auto">
           <button 
             onClick={() => navigate('/profile')}
             className={cn(
-              "w-full flex items-center rounded-lg text-sm font-medium text-text-secondary hover:text-white hover:bg-white/5 transition-colors group",
+              "w-full flex items-center rounded-lg text-sm font-medium transition-colors group text-slate-400 hover:text-white hover:bg-slate-800 dark:text-slate-500 dark:hover:text-indigo-600 dark:hover:bg-slate-50",
               isCollapsed ? "justify-center p-3" : "px-4 py-2.5 gap-2"
             )}
             title={isCollapsed ? "Perfil" : undefined}
@@ -94,7 +99,7 @@ export default function MainLayout() {
           <button 
             onClick={() => setShowLogoutModal(true)}
             className={cn(
-              "w-full flex items-center rounded-lg text-sm font-medium text-text-secondary hover:text-accent-red hover:bg-accent-red/10 transition-colors group",
+              "w-full flex items-center rounded-lg text-sm font-medium transition-colors group text-slate-400 hover:text-red-400 hover:bg-red-500/10 dark:text-slate-500 dark:hover:text-red-600 dark:hover:bg-red-50",
               isCollapsed ? "justify-center p-3" : "px-4 py-2.5 gap-2"
             )}
             title={isCollapsed ? "Cerrar Sesión" : undefined}
@@ -105,19 +110,19 @@ export default function MainLayout() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
         {/* Top Header */}
-        <header className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/5 glassmorphism sticky top-0 z-10">
+        <header className="relative sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-white/80 dark:bg-slate-950/80 px-4 sm:px-6 shadow-sm backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
           <div className="flex items-center gap-4 md:hidden">
-            <div className="w-8 h-8 rounded bg-accent-indigo flex items-center justify-center text-white font-bold">L</div>
+            <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center text-white font-bold">L</div>
           </div>
           
           <div className="hidden md:flex flex-1 max-w-md items-center justify-start pl-4">
             {/* Quick Actions Premium Dropdown */}
             <div className="relative group">
               {/* Trigger Button */}
-              <button className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-200 transition-all duration-300 bg-slate-900/50 border border-slate-800 rounded-full hover:bg-slate-800 hover:border-indigo-500/50 hover:text-white hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]">
-                <Zap className="w-3.5 h-3.5 text-indigo-400" />
+              <button className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition-all duration-300 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:text-slate-950 dark:hover:text-white hover:shadow-sm dark:hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+                <Zap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                 Acciones Rápidas
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform duration-300 group-hover:rotate-180" />
               </button>
@@ -126,7 +131,7 @@ export default function MainLayout() {
               <div className="absolute top-full left-0 w-full h-3 pt-3" />
 
               {/* Dropdown Panel */}
-              <div className="absolute left-0 top-full mt-3 w-72 origin-top-left rounded-2xl border border-slate-800 bg-slate-950/90 p-2 shadow-2xl backdrop-blur-xl opacity-0 invisible scale-95 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:scale-100 z-50">
+              <div className="absolute left-0 top-full mt-3 w-72 origin-top-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/90 p-2 shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-2xl backdrop-blur-xl opacity-0 invisible scale-95 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:scale-100 z-50">
                 {/* Section header */}
                 <div className="px-3 pb-2 pt-1">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Acciones</span>
@@ -135,13 +140,13 @@ export default function MainLayout() {
                 {/* Nueva Venta */}
                 <button
                   onClick={() => navigate('/sales')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-indigo-500/30 group-hover/item:bg-indigo-500/10 group-hover/item:text-indigo-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-indigo-200 dark:group-hover/item:border-indigo-500/30 group-hover/item:bg-indigo-50 dark:group-hover/item:bg-indigo-500/10 group-hover/item:text-indigo-600 dark:group-hover/item:text-indigo-400">
                     <ShoppingCart className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Nueva Venta</span>
+                    <span className="text-sm font-semibold text-slate-950 dark:text-slate-200 group-hover/item:text-indigo-600 dark:group-hover/item:text-white">Nueva Venta</span>
                     <span className="text-xs text-slate-500">Registrar salida de stock</span>
                   </div>
                 </button>
@@ -149,13 +154,13 @@ export default function MainLayout() {
                 {/* Nuevo Restock */}
                 <button
                   onClick={() => navigate('/purchases')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-emerald-500/30 group-hover/item:bg-emerald-500/10 group-hover/item:text-emerald-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-emerald-200 dark:group-hover/item:border-emerald-500/30 group-hover/item:bg-emerald-50 dark:group-hover/item:bg-emerald-500/10 group-hover/item:text-emerald-600 dark:group-hover/item:text-emerald-400">
                     <Truck className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Nueva Compra</span>
+                    <span className="text-sm font-semibold text-slate-950 dark:text-slate-200 group-hover/item:text-emerald-600 dark:group-hover/item:text-white">Nueva Compra</span>
                     <span className="text-xs text-slate-500">Registrar entrada de proveedor</span>
                   </div>
                 </button>
@@ -163,30 +168,30 @@ export default function MainLayout() {
                 {/* Agregar Producto */}
                 <button
                   onClick={() => navigate('/inventory')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-violet-500/30 group-hover/item:bg-violet-500/10 group-hover/item:text-violet-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-violet-200 dark:group-hover/item:border-violet-500/30 group-hover/item:bg-violet-50 dark:group-hover/item:bg-violet-500/10 group-hover/item:text-violet-600 dark:group-hover/item:text-violet-400">
                     <PackagePlus className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Agregar Producto</span>
+                    <span className="text-sm font-semibold text-slate-950 dark:text-slate-200 group-hover/item:text-violet-600 dark:group-hover/item:text-white">Agregar Producto</span>
                     <span className="text-xs text-slate-500">Crear nuevo ítem en inventario</span>
                   </div>
                 </button>
 
                 {/* Divider */}
-                <div className="my-1 mx-3 border-t border-slate-800/80" />
+                <div className="my-1 mx-3 border-t border-slate-200 dark:border-slate-800/80" />
 
                 {/* Ver Dashboard */}
                 <button
                   onClick={() => navigate('/dashboard')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-800/60"
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors group-hover/item:border-amber-500/30 group-hover/item:bg-amber-500/10 group-hover/item:text-amber-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-amber-200 dark:group-hover/item:border-amber-500/30 group-hover/item:bg-amber-50 dark:group-hover/item:bg-amber-500/10 group-hover/item:text-amber-600 dark:group-hover/item:text-amber-400">
                     <TrendingUp className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-200 group-hover/item:text-white">Ver Dashboard</span>
+                    <span className="text-sm font-semibold text-slate-950 dark:text-slate-200 group-hover/item:text-amber-600 dark:group-hover/item:text-white">Ver Dashboard</span>
                     <span className="text-xs text-slate-500">Resumen de métricas del negocio</span>
                   </div>
                 </button>
@@ -195,65 +200,99 @@ export default function MainLayout() {
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
-            <button className="relative p-2 text-text-secondary hover:text-text-primary transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent-red"></span>
+            <button
+              onClick={toggleTheme}
+              className="relative inline-flex h-10 w-20 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 transition-colors duration-500 shadow-inner focus:outline-none"
+              aria-label="Toggle Dark Mode"
+            >
+              <span className="sr-only">Toggle Dark Mode</span>
+              {/* Sliding Knob */}
+              <div className={`absolute top-1 left-1 flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-slate-950 shadow-md transition-transform duration-500 ${theme === 'dark' ? 'translate-x-10' : 'translate-x-0'}`}>
+                {theme === 'light' ? (
+                  <Sun className="h-4 w-4 text-amber-500"/>
+                ) : (
+                  <Moon className="h-4 w-4 text-indigo-400"/>
+                )}
+              </div>
             </button>
-            <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+            <NotificationBell />
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
               <div className="hidden sm:block text-right">
-                <div className="text-sm font-bold text-text-primary leading-tight">{user?.name || 'Admin'}</div>
-                <div className="text-xs text-text-secondary">Administrator</div>
+                <div className="text-sm font-bold text-slate-950 dark:text-white leading-tight">{user?.name || 'Admin'}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">Administrator</div>
               </div>
               <div 
-                className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 overflow-hidden cursor-pointer hover:border-accent-indigo transition-colors"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 dark:bg-white border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden hover:scale-105 transition-transform duration-300 cursor-pointer group"
                 onClick={() => navigate('/profile')}
               >
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'Rodrigo'}`} alt="User" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent dark:from-black/10 dark:to-transparent opacity-50 rounded-full pointer-events-none"></div>
+                <span className="relative text-sm font-bold uppercase text-white dark:text-slate-950">
+                  {user?.name ? user.name.substring(0, 1) : 'A'}
+                </span>
               </div>
               <button 
                 onClick={() => setShowLogoutModal(true)}
-                className="md:hidden ml-2 p-2 text-text-secondary hover:text-accent-red transition-colors"
+                className="md:hidden ml-2 p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 aria-label="Cerrar Sesión"
               >
                 <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>
+          <div id="notification-tray-portal" />
         </header>
 
-        <div className="flex-1 overflow-auto bg-black/40 pb-32 md:pb-6">
+        <div className="flex-1 overflow-auto pb-32 md:pb-6">
           <Outlet />
         </div>
+        {/* Global toast renderer – positioned top-center, swipeable upward */}
+        <Toaster
+          position="top-center"
+          theme="dark"
+          style={{ zIndex: 999999 }}
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              toast: "flex items-center gap-4 bg-slate-950/90 backdrop-blur-xl border border-slate-800 p-4 rounded-2xl shadow-[0_10px_40px_-10px_rgba(99,102,241,0.3)] w-full max-w-sm relative overflow-hidden pointer-events-auto transform transition-all hover:scale-[1.02]",
+              title: "text-white font-semibold text-sm",
+              description: "text-slate-400 text-xs mt-0.5",
+              icon: "bg-slate-800/50 p-2.5 rounded-xl text-indigo-400 flex-shrink-0",
+              success: "border-l-4 !border-l-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)] [&_[data-icon]]:text-emerald-400 [&_[data-icon]]:bg-emerald-500/20",
+              error: "border-l-4 !border-l-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] [&_[data-icon]]:text-red-400 [&_[data-icon]]:bg-red-500/20",
+              warning: "border-l-4 !border-l-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.2)] [&_[data-icon]]:text-orange-400 [&_[data-icon]]:bg-orange-500/20",
+              actionButton: "bg-indigo-600 text-white text-xs rounded-lg px-3 py-1.5 hover:bg-indigo-500 transition-colors ml-auto",
+              cancelButton: "text-slate-500 hover:text-white transition-colors ml-auto",
+            },
+          }}
+        />
       </main>
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-obsidian border border-white/10 rounded-2xl p-6 md:p-8 max-w-sm w-full shadow-[0_0_40px_rgba(0,0,0,0.5)] transform scale-100 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-accent-red/10 flex items-center justify-center border border-accent-red/20 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
-                <LogOut className="w-8 h-8 text-accent-red" />
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl transform transition-all animate-in zoom-in-95 duration-200">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 mb-6">
+              <LogOut className="w-8 h-8 text-red-600 dark:text-red-500" />
             </div>
             
-            <h3 className="text-xl font-bold text-white text-center mb-2">
+            <h3 className="text-2xl font-bold text-slate-950 dark:text-white mb-2">
               ¿Cerrar Sesión?
             </h3>
             
-            <p className="text-text-secondary text-center text-sm mb-8">
+            <p className="text-slate-500 dark:text-slate-400 mb-8">
               ¿Estás seguro de que deseas cerrar sesión? Tendrás que volver a ingresar tus credenciales.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
               <button 
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-lg font-medium text-white bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold transition-colors shadow-sm"
               >
                 Cancelar
               </button>
               <button 
                 onClick={handleConfirmLogout}
-                className="flex-1 px-4 py-2.5 rounded-lg font-medium text-white bg-accent-red hover:bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:shadow-[0_0_25px_rgba(239,68,68,0.6)] transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white font-semibold transition-colors shadow-sm"
               >
                 Cerrar Sesión
               </button>

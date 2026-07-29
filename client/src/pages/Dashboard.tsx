@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, DollarSign, Package, Users, Truck, Loader2, TrendingUp, ShoppingBag, X, Receipt, AlertCircle } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, DollarSign, Package, Users, Truck, Loader2, ShoppingBag, X, Receipt, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useDashboardMetrics, useRecentActivity } from '../hooks/useData';
 import { DatePickerWithRange, type DateRange, useMediaQuery } from '../components/ui/DatePicker';
@@ -8,24 +8,30 @@ import { Drawer } from 'vaul';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 
-// ─── Metric Card ──────────────────────────────────────────────────────────────
-const MetricCard = ({ title, value, change, icon: Icon, trend }: any) => (
-  <div className="glass-card p-6 flex flex-col gap-4">
-    <div className="flex items-center justify-between">
-      <span className="text-sm font-medium text-text-secondary">{title}</span>
-      <div className="w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center">
-        <Icon className="w-4 h-4 text-accent-indigo" />
+export function StatCard({ title, value, icon: Icon }: any) {
+  return (
+    <div className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 shadow-lg backdrop-blur-xl transition-all duration-300 ease-in-out hover:border-indigo-500/30 hover:bg-slate-50 dark:hover:bg-slate-800/60 transform hover:-translate-y-1 relative overflow-hidden flex flex-col justify-center min-h-[130px]">
+      
+      {/* Subtle glow effect on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      {/* Top Row: Title & Premium Micro Icon */}
+      <div className="flex items-center justify-between relative z-10">
+        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</h3>
+        
+        <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 shadow-inner transition-colors duration-300 group-hover:border-slate-300 dark:group-hover:border-slate-700 flex items-center justify-center">
+          <Icon className="h-4 w-4 text-indigo-500 dark:text-indigo-400 drop-shadow-md"/>
+        </div>
       </div>
-    </div>
-    <div>
-      <div className="text-3xl font-bold tracking-tight mb-1">{value}</div>
-      <div className={cn("text-xs font-medium flex items-center gap-1", trend === 'up' ? 'text-accent-emerald' : 'text-accent-red')}>
-        {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
-        {change}
+      
+      {/* Bottom Row: Big Number */}
+      <div className="mt-4 relative z-10">
+        <p className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-950 dark:text-white">{value}</p>
       </div>
+      
     </div>
-  </div>
-);
+  );
+}
 
 // ─── Receipt Detail Fetcher ───────────────────────────────────────────────────
 // Fetches full itemized detail from /sales/{id} or /purchases/{id}
@@ -74,7 +80,7 @@ const ReceiptContent = ({ activity, onClose }: { activity: any; onClose: () => v
   const date = detail?.sale_date ?? detail?.purchase_date ?? activity?.date ?? new Date().toISOString();
 
   return (
-    <div className="bg-slate-950 rounded-2xl w-full">
+    <div className="bg-white dark:bg-slate-950 rounded-2xl w-full">
       {/* ── Header ── */}
       <div className="flex items-start justify-between p-6 pb-5">
         <div className="flex items-center gap-4">
@@ -85,44 +91,44 @@ const ReceiptContent = ({ activity, onClose }: { activity: any; onClose: () => v
               : "bg-indigo-500/10 border-indigo-500/20"
           )}>
             {isSale
-              ? <ShoppingBag className="w-7 h-7 text-emerald-400" />
-              : <ArrowDownLeft className="w-7 h-7 text-indigo-400" />
+              ? <ShoppingBag className="w-7 h-7 text-emerald-500 dark:text-emerald-400" />
+              : <ArrowDownLeft className="w-7 h-7 text-indigo-500 dark:text-indigo-400" />
             }
           </div>
           <div>
             {/* Type badge */}
             <span className={cn(
               "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5 inline-block",
-              isSale ? "bg-emerald-500/10 text-emerald-400" : "bg-indigo-500/10 text-indigo-400"
+              isSale ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-indigo-500/10 text-indigo-500 dark:text-indigo-400"
             )}>
               {typeLabel}
             </span>
-            <div className="text-xl font-bold text-white leading-tight">{entityName}</div>
+            <div className="text-xl font-bold text-slate-950 dark:text-white leading-tight">{entityName}</div>
             <div className="text-xs text-slate-500 mt-1">{formatDate(date)}</div>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800 transition-colors shrink-0 mt-1"
+          className="p-2 rounded-xl text-slate-500 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 mt-1"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Transaction ID */}
-      <div className="mx-6 mb-4 flex items-center justify-between bg-slate-900/60 border border-slate-800/50 rounded-xl px-4 py-2.5">
+      <div className="mx-6 mb-4 flex items-center justify-between bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/50 rounded-xl px-4 py-2.5">
         <span className="text-xs text-slate-500">ID de Transacción</span>
-        <span className="text-xs font-mono font-semibold text-slate-300">{formatReceiptId(activity?.id)}</span>
+        <span className="text-xs font-mono font-semibold text-slate-700 dark:text-slate-300">{formatReceiptId(activity?.id)}</span>
       </div>
 
       {/* ── Entity row ── */}
       <div className="mx-6 mb-4 flex justify-between items-center">
-        <span className="text-sm text-slate-400">{isSale ? 'Cliente' : 'Proveedor'}</span>
-        <span className="text-sm font-semibold text-white">{entityName}</span>
+        <span className="text-sm text-slate-500 dark:text-slate-400">{isSale ? 'Cliente' : 'Proveedor'}</span>
+        <span className="text-sm font-semibold text-slate-950 dark:text-white">{entityName}</span>
       </div>
 
       {/* Dashed divider */}
-      <div className="border-b border-dashed border-slate-700 mx-6 mb-4" />
+      <div className="border-b border-dashed border-slate-300 dark:border-slate-700 mx-6 mb-4" />
 
       {/* ── Items section ── */}
       <div className="px-6 pb-2">
@@ -158,16 +164,16 @@ const ReceiptContent = ({ activity, onClose }: { activity: any; onClose: () => v
                 return (
                   <div
                     key={item.id ?? i}
-                    className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center bg-slate-900/50 border border-slate-800/40 rounded-xl px-3 py-2.5"
+                    className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/40 rounded-xl px-3 py-2.5"
                   >
-                    <span className="text-sm font-medium text-white truncate pr-2">
+                    <span className="text-sm font-medium text-slate-950 dark:text-white truncate pr-2">
                       {item.product_name ?? 'Producto'}
                     </span>
-                    <span className="text-sm font-mono text-slate-400 text-right">×{item.quantity}</span>
-                    <span className="text-sm font-mono text-slate-400 text-right">
+                    <span className="text-sm font-mono text-slate-500 dark:text-slate-400 text-right">×{item.quantity}</span>
+                    <span className="text-sm font-mono text-slate-500 dark:text-slate-400 text-right">
                       {formatCurrency(item.unit_price)}
                     </span>
-                    <span className="text-sm font-mono font-semibold text-slate-200 text-right">
+                    <span className="text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 text-right">
                       {formatCurrency(subtotal)}
                     </span>
                   </div>
@@ -211,30 +217,32 @@ const ReceiptContent = ({ activity, onClose }: { activity: any; onClose: () => v
 const ActivityRow = ({ activity, onClick }: { activity: any; onClick: () => void }) => {
   const isSale = activity.entity_type === 'sale';
 
-  // "Venta - Juan Pérez" → "Juan Pérez"; "Compra/Restock - Sin Proveedor" → "Sin Proveedor"
-  const descParts = (activity.description ?? '').split(' - ');
-  const typeLabel = descParts[0] ?? '';
-  const entityName = descParts.slice(1).join(' - ') || (isSale ? 'Consumidor Final' : 'Sin Proveedor');
+  // "Unknown" fallback logic fix
+  const title = activity.title || 
+                activity.supplier?.name || 
+                activity.product?.supplier?.name || 
+                (isSale ? 'Venta' : 'Proveedor Desconocido');
+  const typeLabel = isSale ? 'Venta' : 'Restock';
 
   return (
     <div
       onClick={onClick}
-      className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 hover:bg-slate-800/60 hover:border-slate-700 cursor-pointer transition-all duration-200 gap-3 sm:gap-0"
+      className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition-all duration-200 gap-3 sm:gap-0"
     >
       {/* Left: icon + details */}
       <div className="flex items-center gap-3">
         <div className={cn(
           "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-          isSale ? "bg-emerald-500/10 text-emerald-400" : "bg-indigo-500/10 text-indigo-400"
+          isSale ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-indigo-500/10 text-indigo-500 dark:text-indigo-400"
         )}>
           {isSale ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
         </div>
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-white truncate">{entityName}</span>
+            <span className="text-sm font-semibold text-slate-950 dark:text-white truncate">{title}</span>
             <span className={cn(
               "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0",
-              isSale ? "bg-emerald-500/10 text-emerald-400" : "bg-indigo-500/10 text-indigo-400"
+              isSale ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-indigo-500/10 text-indigo-500 dark:text-indigo-400"
             )}>
               {typeLabel}
             </span>
@@ -249,11 +257,11 @@ const ActivityRow = ({ activity, onClick }: { activity: any; onClick: () => void
       <div className="flex items-center gap-3 pl-[52px] sm:pl-0">
         <span className={cn(
           "font-mono font-semibold text-sm",
-          isSale ? "text-emerald-400" : "text-slate-300"
+          isSale ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-slate-300"
         )}>
           {isSale ? '+' : ''}{formatCurrency(activity.amount ?? 0)}
         </span>
-        <Receipt className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
+        <Receipt className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors shrink-0" />
       </div>
     </div>
   );
@@ -279,6 +287,30 @@ export default function Dashboard() {
   const productsCount = metrics?.total_products_stored ?? 0;
   const salesCount = metrics?.total_deliveries ?? 0;
 
+
+  const analyticsData = [
+    {
+      title: 'Ganancia de Venta',
+      value: formatCurrency(totalRevenue),
+      icon: DollarSign
+    },
+    {
+      title: 'Clientes',
+      value: clientCount.toString(),
+      icon: Users
+    },
+    {
+      title: 'Productos Almacenados',
+      value: productsCount.toString(),
+      icon: Package
+    },
+    {
+      title: 'Entregas Realizadas',
+      value: salesCount.toString(),
+      icon: Truck
+    }
+  ];
+
   const recentActivity = Array.isArray(recentActivityData) ? recentActivityData : [];
 
   const handleClose = () => setSelectedActivity(null);
@@ -288,15 +320,15 @@ export default function Dashboard() {
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
-          <p className="text-sm text-text-secondary mt-1">Track your business capital and inventory progression.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Overview</h1>
+          <p className="text-sm text-slate-500 mt-1">Track your business capital and inventory progression.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <DatePickerWithRange date={dateRange} setDate={setDateRange} />
           {dateRange?.from && (
             <button
               onClick={() => setDateRange(undefined)}
-              className="text-xs text-text-secondary hover:text-white px-3 py-2 rounded-lg bg-white/5 border border-white/10"
+              className="text-xs text-slate-500 hover:text-slate-950 dark:hover:text-white px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-slate-200 dark:border-white/10"
             >
               Clear
             </button>
@@ -312,21 +344,20 @@ export default function Dashboard() {
         <>
           {/* ── Metric Cards ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MetricCard title="Ganancia de Ventas" value={formatCurrency(totalRevenue)} change="Revenue" icon={DollarSign} trend="up" />
-            <MetricCard title="Clientes" value={clientCount.toString()} change="Total Clients" icon={Users} trend="up" />
-            <MetricCard title="Productos Almacenados" value={productsCount.toString()} change="In Stock" icon={Package} trend="up" />
-            <MetricCard title="Entregas" value={salesCount.toString()} change="Total Deliveries" icon={Truck} trend="up" />
+            {analyticsData.map((data, i) => (
+              <StatCard key={i} {...data} />
+            ))}
           </div>
 
           {/* ── Transaction Feed ── */}
-          <div className="glass-card overflow-hidden">
-            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200 dark:border-slate-200 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold">Actividad Reciente</h2>
+                <h2 className="text-lg font-bold text-slate-950 dark:text-white">Actividad Reciente</h2>
                 <p className="text-xs text-slate-500 mt-0.5">Haz clic en una fila para ver el recibo detallado</p>
               </div>
               {recentActivity.length > 0 && (
-                <span className="text-xs font-semibold text-slate-500 bg-slate-800/60 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 rounded-full">
                   {recentActivity.length} transacciones
                 </span>
               )}

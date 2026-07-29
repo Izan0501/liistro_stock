@@ -64,35 +64,35 @@ export default function EditSupplierModal({ supplier, onClose, onSuccess }: Edit
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-950/80 backdrop-blur-xl border border-slate-800 shadow-2xl shadow-black/50 rounded-2xl w-full max-w-md p-6 md:p-8 animate-in zoom-in-95 duration-200">
-        <h2 className="text-2xl font-semibold tracking-tight text-white mb-6">Edit Supplier</h2>
+      <div className="relative bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl w-full max-w-md p-6 md:p-8 animate-in zoom-in-95 duration-200 transition-colors">
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white mb-6">Edit Supplier</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-1.5 block">Name</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Name</label>
             <input 
               type="text" 
               required
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full h-10 bg-slate-900 border border-slate-700 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-white transition-all" 
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-1.5 block">Contact Email</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Contact Email</label>
             <input 
               type="email" 
               value={formData.email}
               onChange={e => setFormData({ ...formData, email: e.target.value })}
-              className="w-full h-10 bg-slate-900 border border-slate-700 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-white transition-all" 
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-1.5 block">Contact Phone</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Contact Phone</label>
             <input 
               type="text" 
               value={formData.phone}
               onChange={e => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full h-10 bg-slate-900 border border-slate-700 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-white transition-all" 
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
             />
           </div>
           
@@ -107,7 +107,7 @@ export default function EditSupplierModal({ supplier, onClose, onSuccess }: Edit
             <button 
               type="button"
               onClick={onClose}
-              className="flex-1 h-10 rounded-lg font-medium bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition-colors"
+              className="flex-1 h-10 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               Cancel
             </button>
@@ -126,19 +126,19 @@ export default function EditSupplierModal({ supplier, onClose, onSuccess }: Edit
 
         {showDeleteConfirm && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md rounded-2xl p-6 text-center animate-in fade-in duration-200">
-            <h3 className="text-xl font-bold text-white mb-2">Eliminar Proveedor</h3>
+            <h3 className="text-xl font-bold text-slate-950 dark:text-white mb-2">Eliminar Proveedor</h3>
             <p className="text-slate-400 mb-8 max-w-sm">¿Estás seguro? Esta acción no se puede deshacer y el proveedor desaparecerá del directorio.</p>
             <div className="flex gap-4 w-full max-w-xs">
               <button 
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg font-medium text-white hover:bg-white/5 transition-colors"
+                className="flex-1 py-2.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancelar
               </button>
               <button 
                 onClick={() => deleteSupplierMutation.mutate()}
                 disabled={deleteSupplierMutation.isPending}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-bold bg-red-600 text-white hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.4)] disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-bold bg-red-600 text-slate-950 dark:text-white hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.4)] disabled:opacity-50"
               >
                 {deleteSupplierMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Sí, Eliminar

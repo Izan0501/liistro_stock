@@ -42,7 +42,7 @@ export const HoverButton: React.FC<ButtonProps> = ({
         color: isHovered ? hoverTextColor : textColor,
         transition: 'color 0.3s ease',
       }}
-      className={`relative overflow-hidden rounded-lg border border-white/10 font-medium px-4 py-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-slate-200 dark:border-white/10 font-medium px-4 py-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       {...rest}
     >
       {/* Radial glow that follows mouse */}
