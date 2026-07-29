@@ -8,6 +8,14 @@ import { NotificationBell } from '../ui/NotificationBell';
 import { Toaster } from 'sonner';
 import { useThemeStore } from '../../store/useThemeStore';
 
+const navItems = [
+  { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+  { name: 'Proveedores', to: '/purchases', icon: Truck },
+  { name: 'Inventario', to: '/inventory', icon: Package },
+  { name: 'Ventas', to: '/sales', icon: ShoppingCart },
+  { name: 'Entregas', to: '/deliveries', icon: History },
+];
+
 export default function MainLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -28,14 +36,6 @@ export default function MainLayout() {
     setShowLogoutModal(false);
     logout();
   };
-  
-  const navItems = [
-    { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-    { name: 'Proveedores', to: '/purchases', icon: Truck },
-    { name: 'Inventario', to: '/inventory', icon: Package },
-    { name: 'Ventas', to: '/sales', icon: ShoppingCart },
-    { name: 'Entregas', to: '/deliveries', icon: History },
-  ];
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white overflow-hidden selection:bg-accent-indigo/30 transition-colors duration-300">
@@ -43,22 +43,22 @@ export default function MainLayout() {
       {/* Desktop Sidebar */}
       <aside 
         className={cn(
-          "hidden md:flex flex-col border-r border-slate-800 dark:border-slate-200 bg-slate-950 dark:bg-white text-white dark:text-slate-950 transition-all duration-500 ease-in-out relative z-[60] overflow-visible",
+          "hidden md:flex flex-col border-r border-slate-800 dark:border-slate-200 bg-slate-950 dark:bg-white text-white dark:text-slate-950 transition-[width,colors,transform] duration-300 ease-in-out relative z-[60] overflow-visible",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
-        <button 
+        <button type="button" 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3.5 top-8 z-[100] flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 backdrop-blur-md text-slate-400 shadow-sm transition-all duration-300 ease-in-out hover:scale-110 hover:border-indigo-500 hover:text-indigo-400 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+          className="absolute -right-3.5 top-8 z-[100] flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 backdrop-blur-md text-slate-400 shadow-sm transition-colors transition-transform transition-shadow duration-300 ease-in-out hover:scale-110 hover:border-indigo-500 hover:text-indigo-400 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
           aria-label="Toggle Sidebar"
         >
           <ChevronLeft className={cn("h-4 w-4 transition-transform duration-500 ease-in-out", isCollapsed ? "rotate-180" : "rotate-0")} />
         </button>
 
         <div className="h-16 flex items-center px-5 mb-2">
-          <div className={cn("flex items-center gap-2 text-xl font-bold tracking-tight transition-all", isCollapsed ? "justify-center w-full" : "")}>
+          <div className={cn("flex items-center gap-2 text-xl font-bold tracking-tight transition-colors", isCollapsed ? "justify-center w-full" : "")}>
             <div className="min-w-[32px] w-8 h-8 rounded bg-indigo-600 flex items-center justify-center text-white">L</div>
-            {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Liistro<span className="text-slate-500 dark:text-slate-400 font-medium">Stock</span></span>}
+            <span className={cn("whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>Liistro<span className="text-slate-500 dark:text-slate-400 font-medium">Stock</span></span>
           </div>
         </div>
         
@@ -69,7 +69,7 @@ export default function MainLayout() {
               to={item.to}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative",
+                  "flex items-center rounded-lg text-sm font-medium transition-colors duration-200 group relative",
                   isCollapsed ? "justify-center p-3" : "px-3 py-2.5 gap-3",
                   isActive 
                     ? "bg-indigo-500/10 text-indigo-400 dark:bg-indigo-50 dark:text-indigo-600" 
@@ -79,13 +79,13 @@ export default function MainLayout() {
               title={isCollapsed ? item.name : undefined}
             >
               <item.icon className={cn("w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110", isCollapsed ? "w-6 h-6" : "")} />
-              {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
+              <span className={cn("whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>{item.name}</span>
             </NavLink>
           ))}
         </nav>
         
         <div className="p-4 pb-6 space-y-2 mt-auto">
-          <button 
+          <button type="button" 
             onClick={() => navigate('/profile')}
             className={cn(
               "w-full flex items-center rounded-lg text-sm font-medium transition-colors group text-slate-400 hover:text-white hover:bg-slate-800 dark:text-slate-500 dark:hover:text-indigo-600 dark:hover:bg-slate-50",
@@ -94,9 +94,9 @@ export default function MainLayout() {
             title={isCollapsed ? "Perfil" : undefined}
           >
             <UserIcon className={cn("w-4 h-4 flex-shrink-0", isCollapsed ? "w-5 h-5" : "")} />
-            {!isCollapsed && <span className="whitespace-nowrap">Perfil</span>}
+            <span className={cn("whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>Perfil</span>
           </button>
-          <button 
+          <button type="button" 
             onClick={() => setShowLogoutModal(true)}
             className={cn(
               "w-full flex items-center rounded-lg text-sm font-medium transition-colors group text-slate-400 hover:text-red-400 hover:bg-red-500/10 dark:text-slate-500 dark:hover:text-red-600 dark:hover:bg-red-50",
@@ -105,7 +105,7 @@ export default function MainLayout() {
             title={isCollapsed ? "Cerrar Sesión" : undefined}
           >
             <LogOut className={cn("w-4 h-4 flex-shrink-0", isCollapsed ? "w-5 h-5" : "")} />
-            {!isCollapsed && <span className="whitespace-nowrap">Cerrar Sesión</span>}
+            <span className={cn("whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>Cerrar Sesión</span>
           </button>
         </div>
       </aside>
@@ -121,7 +121,7 @@ export default function MainLayout() {
             {/* Quick Actions Premium Dropdown */}
             <div className="relative group">
               {/* Trigger Button */}
-              <button className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition-all duration-300 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:text-slate-950 dark:hover:text-white hover:shadow-sm dark:hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+              <button type="button" className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors transition-shadow duration-300 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:text-slate-950 dark:hover:text-white hover:shadow-sm dark:hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]">
                 <Zap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                 Acciones Rápidas
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform duration-300 group-hover:rotate-180" />
@@ -131,16 +131,15 @@ export default function MainLayout() {
               <div className="absolute top-full left-0 w-full h-3 pt-3" />
 
               {/* Dropdown Panel */}
-              <div className="absolute left-0 top-full mt-3 w-72 origin-top-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/90 p-2 shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-2xl backdrop-blur-xl opacity-0 invisible scale-95 transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:scale-100 z-50">
+              <div className="absolute left-0 top-full mt-3 w-72 origin-top-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/90 p-2 shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-2xl backdrop-blur-xl opacity-0 invisible scale-95 transition-colors transition-opacity transition-transform transition-shadow duration-200 group-hover:opacity-100 group-hover:visible group-hover:scale-100 z-50">
                 {/* Section header */}
                 <div className="px-3 pb-2 pt-1">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Acciones</span>
                 </div>
 
                 {/* Nueva Venta */}
-                <button
-                  onClick={() => navigate('/sales')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                <button type="button"                   onClick={() => navigate('/sales')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-indigo-200 dark:group-hover/item:border-indigo-500/30 group-hover/item:bg-indigo-50 dark:group-hover/item:bg-indigo-500/10 group-hover/item:text-indigo-600 dark:group-hover/item:text-indigo-400">
                     <ShoppingCart className="w-4 h-4" />
@@ -152,9 +151,8 @@ export default function MainLayout() {
                 </button>
 
                 {/* Nuevo Restock */}
-                <button
-                  onClick={() => navigate('/purchases')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                <button type="button"                   onClick={() => navigate('/purchases')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-emerald-200 dark:group-hover/item:border-emerald-500/30 group-hover/item:bg-emerald-50 dark:group-hover/item:bg-emerald-500/10 group-hover/item:text-emerald-600 dark:group-hover/item:text-emerald-400">
                     <Truck className="w-4 h-4" />
@@ -166,9 +164,8 @@ export default function MainLayout() {
                 </button>
 
                 {/* Agregar Producto */}
-                <button
-                  onClick={() => navigate('/inventory')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                <button type="button"                   onClick={() => navigate('/inventory')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-violet-200 dark:group-hover/item:border-violet-500/30 group-hover/item:bg-violet-50 dark:group-hover/item:bg-violet-500/10 group-hover/item:text-violet-600 dark:group-hover/item:text-violet-400">
                     <PackagePlus className="w-4 h-4" />
@@ -183,9 +180,8 @@ export default function MainLayout() {
                 <div className="my-1 mx-3 border-t border-slate-200 dark:border-slate-800/80" />
 
                 {/* Ver Dashboard */}
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                <button type="button"                   onClick={() => navigate('/dashboard')}
+                  className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-amber-200 dark:group-hover/item:border-amber-500/30 group-hover/item:bg-amber-50 dark:group-hover/item:bg-amber-500/10 group-hover/item:text-amber-600 dark:group-hover/item:text-amber-400">
                     <TrendingUp className="w-4 h-4" />
@@ -200,8 +196,7 @@ export default function MainLayout() {
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
-            <button
-              onClick={toggleTheme}
+            <button type="button"               onClick={toggleTheme}
               className="relative inline-flex h-10 w-20 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 transition-colors duration-500 shadow-inner focus:outline-none"
               aria-label="Toggle Dark Mode"
             >
@@ -221,7 +216,8 @@ export default function MainLayout() {
                 <div className="text-sm font-bold text-slate-950 dark:text-white leading-tight">{user?.name || 'Admin'}</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">Administrator</div>
               </div>
-              <div 
+              <button 
+                type="button"
                 className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 dark:bg-white border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden hover:scale-105 transition-transform duration-300 cursor-pointer group"
                 onClick={() => navigate('/profile')}
               >
@@ -229,8 +225,8 @@ export default function MainLayout() {
                 <span className="relative text-sm font-bold uppercase text-white dark:text-slate-950">
                   {user?.name ? user.name.substring(0, 1) : 'A'}
                 </span>
-              </div>
-              <button 
+              </button>
+              <button type="button" 
                 onClick={() => setShowLogoutModal(true)}
                 className="md:hidden ml-2 p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 aria-label="Cerrar Sesión"
@@ -253,7 +249,7 @@ export default function MainLayout() {
           toastOptions={{
             unstyled: true,
             classNames: {
-              toast: "flex items-center gap-4 bg-slate-950/90 backdrop-blur-xl border border-slate-800 p-4 rounded-2xl shadow-[0_10px_40px_-10px_rgba(99,102,241,0.3)] w-full max-w-sm relative overflow-hidden pointer-events-auto transform transition-all hover:scale-[1.02]",
+              toast: "flex items-center gap-4 bg-slate-950/90 backdrop-blur-xl border border-slate-800 p-4 rounded-2xl shadow-[0_10px_40px_-10px_rgba(99,102,241,0.3)] w-full max-w-sm relative overflow-hidden pointer-events-auto transform transition-transform hover:scale-[1.02]",
               title: "text-white font-semibold text-sm",
               description: "text-slate-400 text-xs mt-0.5",
               icon: "bg-slate-800/50 p-2.5 rounded-xl text-indigo-400 flex-shrink-0",
@@ -269,8 +265,8 @@ export default function MainLayout() {
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl transform transition-all animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4 animate-in fade-in transition-opacity duration-200">
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl transform transition-colors transition-transform transition-shadow animate-in zoom-in-95 duration-200">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 mb-6">
               <LogOut className="w-8 h-8 text-red-600 dark:text-red-500" />
             </div>
@@ -284,13 +280,13 @@ export default function MainLayout() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-3 w-full">
-              <button 
+              <button type="button" 
                 onClick={() => setShowLogoutModal(false)}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold transition-colors shadow-sm"
               >
                 Cancelar
               </button>
-              <button 
+              <button type="button" 
                 onClick={handleConfirmLogout}
                 className="w-full px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white font-semibold transition-colors shadow-sm"
               >

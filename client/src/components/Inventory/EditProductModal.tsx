@@ -51,6 +51,7 @@ export default function EditProductModal({ product, suppliers, onClose, onSucces
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       onSuccess('edit');
     }
   });
@@ -62,6 +63,7 @@ export default function EditProductModal({ product, suppliers, onClose, onSucces
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       onSuccess('delete');
     }
   });
@@ -116,22 +118,24 @@ export default function EditProductModal({ product, suppliers, onClose, onSucces
         <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white mb-6">Edit Product</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-12">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Product Name</label>
+            <label htmlFor="product-name" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Product Name</label>
             <input 
+              id="product-name"
               type="text" 
               required
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
             />
           </div>
 
           <div className="md:col-span-6 flex flex-col justify-end">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Supplier</label>
+            <label htmlFor="product-supplier" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Supplier</label>
             <select 
+              id="product-supplier"
               value={formData.supplier_id}
               onChange={e => setFormData({ ...formData, supplier_id: e.target.value })}
-              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 appearance-none transition-all"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 appearance-none transition-colors"
             >
               <option value="">No Supplier</option>
               {suppliers.map((s: any) => (
@@ -141,46 +145,50 @@ export default function EditProductModal({ product, suppliers, onClose, onSucces
           </div>
 
           <div className="md:col-span-6 flex flex-col justify-end">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Category</label>
+            <label htmlFor="product-category" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Category</label>
             <input 
+              id="product-category"
               type="text" 
               value={formData.category}
               onChange={e => setFormData({ ...formData, category: e.target.value })}
-              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
             />
           </div>
 
           <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Precio de Compra</label>
+              <label htmlFor="product-buy-price" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Precio de Compra</label>
               <input 
+                id="product-buy-price"
                 type="number" 
                 step="0.01"
                 required
                 value={formData.buy_price}
                 onChange={e => handleBuyPriceChange(e.target.value)}
-                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Margen %</label>
+              <label htmlFor="product-markup" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Margen %</label>
               <input 
+                id="product-markup"
                 type="number" 
                 step="0.01"
                 value={formData.markup_percentage}
                 onChange={e => handleMarkupChange(e.target.value)}
-                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Precio Final</label>
+              <label htmlFor="product-final-price" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Precio Final</label>
               <input 
+                id="product-final-price"
                 type="number" 
                 step="0.01"
                 required
                 value={formData.sell_price}
                 onChange={e => handleSellPriceChange(e.target.value)}
-                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
               />
             </div>
           </div>
@@ -214,17 +222,17 @@ export default function EditProductModal({ product, suppliers, onClose, onSucces
         </form>
 
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md rounded-2xl p-6 text-center animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md rounded-2xl p-6 text-center animate-in fade-in transition-opacity duration-200">
             <h3 className="text-xl font-bold text-slate-950 dark:text-white mb-2">Eliminar Producto</h3>
             <p className="text-slate-400 mb-8 max-w-sm">¿Estás seguro? Esta acción no se puede deshacer y el producto desaparecerá del inventario.</p>
             <div className="flex gap-4 w-full max-w-xs">
-              <button 
+              <button type="button" 
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 py-2.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancelar
               </button>
-              <button 
+              <button type="button" 
                 onClick={() => deleteProductMutation.mutate()}
                 disabled={deleteProductMutation.isPending}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-bold bg-red-600 text-slate-950 dark:text-white hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.4)] disabled:opacity-50"

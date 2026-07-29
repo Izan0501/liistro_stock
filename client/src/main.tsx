@@ -6,7 +6,7 @@ import { registerSW } from 'virtual:pwa-register';
 
 import './index.css';
 import App from './App';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthProvider';
 
 // Auto update SW
 registerSW({

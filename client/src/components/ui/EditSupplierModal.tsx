@@ -37,6 +37,8 @@ export default function EditSupplierModal({ supplier, onClose, onSuccess }: Edit
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       onSuccess('edit');
     }
   });
@@ -47,6 +49,8 @@ export default function EditSupplierModal({ supplier, onClose, onSuccess }: Edit
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       onSuccess('delete');
     }
   });
@@ -68,31 +72,34 @@ export default function EditSupplierModal({ supplier, onClose, onSuccess }: Edit
         <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white mb-6">Edit Supplier</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Name</label>
+            <label htmlFor="supplier-name" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Name</label>
             <input 
+              id="supplier-name"
               type="text" 
               required
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Contact Email</label>
+            <label htmlFor="supplier-email" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Contact Email</label>
             <input 
+              id="supplier-email"
               type="email" 
               value={formData.email}
               onChange={e => setFormData({ ...formData, email: e.target.value })}
-              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Contact Phone</label>
+            <label htmlFor="supplier-phone" className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">Contact Phone</label>
             <input 
+              id="supplier-phone"
               type="text" 
               value={formData.phone}
               onChange={e => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition-colors"
             />
           </div>
           
@@ -125,17 +132,17 @@ export default function EditSupplierModal({ supplier, onClose, onSuccess }: Edit
         </form>
 
         {showDeleteConfirm && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md rounded-2xl p-6 text-center animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md rounded-2xl p-6 text-center animate-in fade-in transition-opacity duration-200">
             <h3 className="text-xl font-bold text-slate-950 dark:text-white mb-2">Eliminar Proveedor</h3>
             <p className="text-slate-400 mb-8 max-w-sm">¿Estás seguro? Esta acción no se puede deshacer y el proveedor desaparecerá del directorio.</p>
             <div className="flex gap-4 w-full max-w-xs">
-              <button 
+              <button type="button" 
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 py-2.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancelar
               </button>
-              <button 
+              <button type="button" 
                 onClick={() => deleteSupplierMutation.mutate()}
                 disabled={deleteSupplierMutation.isPending}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-bold bg-red-600 text-slate-950 dark:text-white hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.4)] disabled:opacity-50"

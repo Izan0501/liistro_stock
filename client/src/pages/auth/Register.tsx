@@ -11,7 +11,7 @@ const SubmitButton = ({ loading, label }: { loading: boolean; label: string }) =
   <button
     type="submit"
     disabled={loading}
-    className="group relative w-full overflow-hidden rounded-xl bg-indigo-600 px-6 py-3.5 font-semibold text-white transition-all duration-300 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
+    className="group relative w-full overflow-hidden rounded-xl bg-indigo-600 px-6 py-3.5 font-semibold text-white transition-colors transition-opacity transition-shadow duration-300 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
   >
     <span className="absolute inset-0 -translate-x-full skew-x-12 bg-white/10 transition-transform duration-500 group-hover:translate-x-full" />
     <span className="relative flex items-center justify-center gap-2 text-sm">
@@ -115,7 +115,7 @@ export default function Register() {
         token = loginRes.data.access_token;
       }
 
-      localStorage.setItem('access_token', token);
+      localStorage.setItem('auth:v1', token);
       const userResponse = await api.get('/auth/me');
       const user = userResponse.data;
       login(token, user);
@@ -186,7 +186,7 @@ export default function Register() {
       >
         {/* Cursor glow */}
         <div
-          className="pointer-events-none absolute inset-0 transition-all duration-500"
+          className="pointer-events-none absolute inset-0 transition-colors duration-500"
           style={{
             background: `radial-gradient(600px circle at ${glowPos.x}% ${glowPos.y}%, rgba(99,102,241,0.08), transparent 60%)`,
           }}
@@ -265,11 +265,12 @@ export default function Register() {
 
             {/* Secret key — styled as a danger field */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              <label htmlFor="secret-key" className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                 Secret Registration Key
               </label>
               <div className="relative rounded-xl overflow-hidden border border-red-500/30 bg-slate-950/70">
                 <input
+                  id="secret-key"
                   type="password"
                   required
                   value={secretKey}

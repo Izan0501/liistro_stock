@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -39,7 +48,7 @@
   }
   
   .glass-card {
-    @apply bg-white border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-slate-950 dark:bg-slate-900/50 dark:border-slate-800 dark:shadow-lg dark:text-white dark:backdrop-blur-xl rounded-2xl transition-all duration-300;
+    @apply bg-white border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-slate-950 dark:bg-slate-900/50 dark:border-slate-800 dark:shadow-lg dark:text-white dark:backdrop-blur-xl rounded-2xl transition-colors duration-300;
   }
 
   .neon-text-emerald {

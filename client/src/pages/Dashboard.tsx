@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, DollarSign, Package, Users, Truck, Loader2, ShoppingBag, X, Receipt, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useDashboardMetrics, useRecentActivity } from '../hooks/useData';
-import { DatePickerWithRange, type DateRange, useMediaQuery } from '../components/ui/DatePicker';
+import { DatePickerWithRange, type DateRange } from '../components/ui/DatePicker';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { format } from 'date-fns';
 import { Drawer } from 'vaul';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 
-export function StatCard({ title, value, icon: Icon }: any) {
+function StatCard({ title, value, icon: Icon }: any) {
   return (
-    <div className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 shadow-lg backdrop-blur-xl transition-all duration-300 ease-in-out hover:border-indigo-500/30 hover:bg-slate-50 dark:hover:bg-slate-800/60 transform hover:-translate-y-1 relative overflow-hidden flex flex-col justify-center min-h-[130px]">
+    <div className="group rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 shadow-lg backdrop-blur-xl transition-colors transition-transform transition-shadow duration-300 ease-in-out hover:border-indigo-500/30 hover:bg-slate-50 dark:hover:bg-slate-800/60 transform hover:-translate-y-1 relative overflow-hidden flex flex-col justify-center min-h-[130px]">
       
       {/* Subtle glow effect on hover */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -25,8 +26,10 @@ export function StatCard({ title, value, icon: Icon }: any) {
       </div>
       
       {/* Bottom Row: Big Number */}
-      <div className="mt-4 relative z-10">
-        <p className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-950 dark:text-white">{value}</p>
+      <div className="mt-4 relative z-10 min-w-0 overflow-hidden">
+        <p className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-950 dark:text-white tabular-nums truncate block" title={String(value)}>
+          {value}
+        </p>
       </div>
       
     </div>
@@ -52,8 +55,9 @@ function useTransactionDetail(activity: any) {
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const formatCurrency = (val: number | string) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(val));
+  currencyFormatter.format(Number(val));
 
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString('es-AR', {
@@ -107,8 +111,7 @@ const ReceiptContent = ({ activity, onClose }: { activity: any; onClose: () => v
             <div className="text-xs text-slate-500 mt-1">{formatDate(date)}</div>
           </div>
         </div>
-        <button
-          onClick={onClose}
+        <button type="button" aria-label="Cerrar" onClick={onClose}
           className="p-2 rounded-xl text-slate-500 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 mt-1"
         >
           <X className="w-5 h-5" />
@@ -159,11 +162,11 @@ const ReceiptContent = ({ activity, onClose }: { activity: any; onClose: () => v
 
             {/* Item rows */}
             <div className="space-y-1.5">
-              {items.map((item: any, i: number) => {
+              {items.map((item: any) => {
                 const subtotal = item.subtotal ?? (Number(item.unit_price) * item.quantity);
                 return (
                   <div
-                    key={item.id ?? i}
+                    key={item.id || item.product_id || item.product_name}
                     className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/40 rounded-xl px-3 py-2.5"
                   >
                     <span className="text-sm font-medium text-slate-950 dark:text-white truncate pr-2">
@@ -225,9 +228,10 @@ const ActivityRow = ({ activity, onClick }: { activity: any; onClick: () => void
   const typeLabel = isSale ? 'Venta' : 'Restock';
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition-all duration-200 gap-3 sm:gap-0"
+      className="text-left w-full block group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer transition-colors duration-200 gap-3 sm:gap-0"
     >
       {/* Left: icon + details */}
       <div className="flex items-center gap-3">
@@ -263,7 +267,7 @@ const ActivityRow = ({ activity, onClick }: { activity: any; onClick: () => void
         </span>
         <Receipt className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors shrink-0" />
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -316,7 +320,7 @@ export default function Dashboard() {
   const handleClose = () => setSelectedActivity(null);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 p-4 md:p-8 pb-24 md:pb-8">
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in transition-opacity duration-300 p-4 md:p-8 pb-24 md:pb-8">
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -326,8 +330,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 flex-wrap">
           <DatePickerWithRange date={dateRange} setDate={setDateRange} />
           {dateRange?.from && (
-            <button
-              onClick={() => setDateRange(undefined)}
+            <button type="button"               onClick={() => setDateRange(undefined)}
               className="text-xs text-slate-500 hover:text-slate-950 dark:hover:text-white px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-slate-200 dark:border-white/10"
             >
               Clear
@@ -344,8 +347,8 @@ export default function Dashboard() {
         <>
           {/* ── Metric Cards ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {analyticsData.map((data, i) => (
-              <StatCard key={i} {...data} />
+            {analyticsData.map((data) => (
+              <StatCard key={data.title} {...data} />
             ))}
           </div>
 
@@ -372,9 +375,9 @@ export default function Dashboard() {
                 <div className="py-12 text-center text-slate-500 text-sm">
                   No hay actividad reciente.
                 </div>
-              ) : recentActivity.map((act: any, idx: number) => (
+              ) : recentActivity.map((act: any) => (
                 <ActivityRow
-                  key={act.id ?? idx}
+                  key={act.id || act.title || act.date}
                   activity={act}
                   onClick={() => setSelectedActivity(act)}
                 />
@@ -386,12 +389,15 @@ export default function Dashboard() {
 
       {/* ── Receipt: Desktop Dialog ── */}
       {isDesktop && selectedActivity && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={handleClose}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in transition-opacity duration-200 cursor-default"
+            onClick={handleClose}
+            aria-label="Close modal"
+          />
           <div
-            className="w-full max-w-md animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto rounded-2xl"
+            className="w-full max-w-md animate-in zoom-in-95 transition-opacity duration-200 max-h-[90vh] overflow-y-auto rounded-2xl relative z-10"
             onClick={(e) => e.stopPropagation()}
           >
             <ReceiptContent activity={selectedActivity} onClose={handleClose} />
@@ -404,15 +410,16 @@ export default function Dashboard() {
         <Drawer.Root open={!!selectedActivity} onOpenChange={(open) => !open && handleClose()}>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
-            <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 outline-none max-h-[92vh] flex flex-col">
-              <div className="bg-slate-950 rounded-t-3xl border-t border-slate-800 flex flex-col overflow-hidden">
+            <Drawer.Content className="fixed left-1/2 -translate-x-1/2 bottom-24 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-50 outline-none max-h-[75vh] flex flex-col mb-4 max-w-lg w-[92vw]">
+              <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden shadow-2xl">
                 {/* Drag handle */}
                 <div className="flex justify-center pt-4 pb-2 shrink-0">
-                  <div className="w-10 h-1 rounded-full bg-slate-700" />
+                  <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                 </div>
                 <div className="overflow-y-auto">
                   <ReceiptContent activity={selectedActivity} onClose={handleClose} />
-                  <div className="h-8" />
+                  {/* Spacer to guarantee the total clears the floating mobile dock */}
+                  <div className="h-36 w-full flex-shrink-0" aria-hidden="true" />
                 </div>
               </div>
             </Drawer.Content>

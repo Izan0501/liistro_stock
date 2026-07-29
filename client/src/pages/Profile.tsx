@@ -42,7 +42,7 @@ export default function Profile() {
       await api.patch('/auth/me', { name });
       
       const updatedUser = { ...user, name };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem('user:v1', JSON.stringify(updatedUser));
       
       setProfileMessage({ type: 'success', text: 'Perfil actualizado correctamente.' });
     } catch (err: any) {

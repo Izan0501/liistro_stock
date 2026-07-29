@@ -5,7 +5,8 @@ import {
   Bell, AlertTriangle, Check, Trash2,
   ShoppingCart, Package, Shield, Activity, PlusSquare,
 } from 'lucide-react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { m, LazyMotion, domMax, useMotionValue, useTransform, animate } from 'framer-motion';
+import type { PanInfo } from 'framer-motion';
 import {
   useNotificationStore,
   type AppNotification,
@@ -65,11 +66,11 @@ function NotificationRow({ n }: { n: AppNotification }) {
   const greenOpacity = useTransform(x, [0, 80], [0, 1]);
   const redOpacity = useTransform(x, [-80, 0], [1, 0]);
 
-  const handleDragEnd = () => {
-    const current = x.get();
-    if (current > 60) {
+  const handleDragEnd = (_event: any, info: PanInfo) => {
+    const swipeThreshold = 80;
+    if (info.offset.x > swipeThreshold) {
       animate(x, 400, { duration: 0.2, onComplete: () => markAsRead(n.id) });
-    } else if (current < -60) {
+    } else if (info.offset.x < -swipeThreshold) {
       animate(x, -400, { duration: 0.2, onComplete: () => deleteNotification(n.id) });
     } else {
       animate(x, 0, { type: 'spring', stiffness: 500, damping: 30 });
@@ -92,24 +93,26 @@ function NotificationRow({ n }: { n: AppNotification }) {
     const s = n as StockNotification;
     return (
       <li className="relative overflow-hidden rounded-xl">
-        <motion.div className="absolute inset-0 flex items-center justify-start pl-4 bg-emerald-500/20 rounded-xl" style={{ opacity: greenOpacity }}>
-          <Check className="w-5 h-5 text-emerald-400" />
-        </motion.div>
-        <motion.div className="absolute inset-0 flex items-center justify-end pr-4 bg-red-500/20 rounded-xl" style={{ opacity: redOpacity }}>
-          <Trash2 className="w-5 h-5 text-red-400" />
-        </motion.div>
-        <motion.div
-          style={{ x }}
-          drag="x"
-          dragConstraints={{ left: -100, right: 100 }}
-          dragElastic={0.1}
-          onDragStart={() => { isDragging.current = true; }}
-          onDragEnd={() => { handleDragEnd(); setTimeout(() => { isDragging.current = false; }, 50); }}
-          onClick={handleClick}
-          className={cn(
-            'relative z-10 flex gap-3 p-4 border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer select-none',
-          )}
-        >
+        <LazyMotion features={domMax}>
+          <m.div className="absolute inset-0 flex items-center justify-start pl-4 bg-emerald-500/20 rounded-xl" style={{ opacity: greenOpacity }}>
+            <Check className="w-5 h-5 text-emerald-400" />
+          </m.div>
+          <m.div className="absolute inset-0 flex items-center justify-end pr-4 bg-red-500/20 rounded-xl" style={{ opacity: redOpacity }}>
+            <Trash2 className="w-5 h-5 text-red-400" />
+          </m.div>
+          <m.button
+            type="button"
+            style={{ x }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.8}
+            onDragStart={() => { isDragging.current = true; }}
+            onDragEnd={(e, info) => { handleDragEnd(e, info); setTimeout(() => { isDragging.current = false; }, 50); }}
+            onClick={handleClick}
+            className={cn(
+              'text-left w-full block relative z-10 flex gap-3 p-4 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-grab active:cursor-grabbing touch-pan-y select-none',
+            )}
+          >
           <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', s.stock <= 5 ? 'bg-red-500/15 text-red-400' : 'bg-orange-500/15 text-orange-400')}>
             <AlertTriangle className="w-4 h-4" />
           </div>
@@ -123,7 +126,8 @@ function NotificationRow({ n }: { n: AppNotification }) {
             <p className="text-[10px] text-slate-600 mt-1">{timeLabel}</p>
           </div>
           {!s.isRead && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-orange-400 animate-pulse" />}
-        </motion.div>
+          </m.button>
+        </LazyMotion>
       </li>
     );
   }
@@ -132,24 +136,26 @@ function NotificationRow({ n }: { n: AppNotification }) {
   const a = n as ActivityNotification;
   return (
     <li className="relative overflow-hidden rounded-xl">
-      <motion.div className="absolute inset-0 flex items-center justify-start pl-4 bg-emerald-500/20 rounded-xl" style={{ opacity: greenOpacity }}>
-        <Check className="w-5 h-5 text-emerald-400" />
-      </motion.div>
-      <motion.div className="absolute inset-0 flex items-center justify-end pr-4 bg-red-500/20 rounded-xl" style={{ opacity: redOpacity }}>
-        <Trash2 className="w-5 h-5 text-red-400" />
-      </motion.div>
-      <motion.div
-        style={{ x }}
-        drag="x"
-        dragConstraints={{ left: -100, right: 100 }}
-        dragElastic={0.1}
-        onDragStart={() => { isDragging.current = true; }}
-        onDragEnd={() => { handleDragEnd(); setTimeout(() => { isDragging.current = false; }, 50); }}
-        onClick={handleClick}
-        className={cn(
-          'relative z-10 flex gap-3 p-4 border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer select-none',
-        )}
-      >
+      <LazyMotion features={domMax}>
+        <m.div className="absolute inset-0 flex items-center justify-start pl-4 bg-emerald-500/20 rounded-xl" style={{ opacity: greenOpacity }}>
+          <Check className="w-5 h-5 text-emerald-400" />
+        </m.div>
+        <m.div className="absolute inset-0 flex items-center justify-end pr-4 bg-red-500/20 rounded-xl" style={{ opacity: redOpacity }}>
+          <Trash2 className="w-5 h-5 text-red-400" />
+        </m.div>
+        <m.button
+          type="button"
+          style={{ x }}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.8}
+          onDragStart={() => { isDragging.current = true; }}
+          onDragEnd={(e, info) => { handleDragEnd(e, info); setTimeout(() => { isDragging.current = false; }, 50); }}
+          onClick={handleClick}
+          className={cn(
+            'text-left w-full block relative z-10 flex gap-3 p-4 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-grab active:cursor-grabbing touch-pan-y select-none',
+          )}
+        >
         <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', activityBg(a.type, a.user))}>
           <ActivityIcon type={a.type} user={a.user} />
         </div>
@@ -159,7 +165,8 @@ function NotificationRow({ n }: { n: AppNotification }) {
           <p className="text-[10px] text-slate-600 mt-1">{timeLabel}</p>
         </div>
         {!a.isRead && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-400 animate-pulse" />}
-      </motion.div>
+        </m.button>
+      </LazyMotion>
     </li>
   );
 }
@@ -175,13 +182,14 @@ export function NotificationBell() {
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    setPortalNode(document.getElementById('notification-tray-portal'));
+    if (typeof document !== 'undefined') {
+      setPortalNode(document.getElementById('notification-tray-portal'));
+    }
   }, []);
 
   return (
     <>
-      <button
-        onClick={() => setOpen(!open)}
+      <button type="button"         onClick={() => setOpen(!open)}
         className="relative p-2 text-slate-400 hover:text-slate-950 dark:text-white transition-colors rounded-lg hover:bg-slate-800/60"
         aria-label="Notificaciones"
       >
@@ -196,14 +204,14 @@ export function NotificationBell() {
 
       {open && portalNode && createPortal(
         <>
-          <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
+          <button type="button" aria-label="Cerrar notificaciones" className="fixed inset-0 z-[90] w-full h-full cursor-default" onClick={() => setOpen(false)} />
           <div className="
             absolute top-[calc(100%+0.5rem)] right-4 z-[100]
             w-[calc(100vw-2rem)] sm:w-[380px] sm:right-6
             bg-white dark:bg-slate-950 
             border border-slate-200 dark:border-slate-800 
             rounded-2xl shadow-[0_20px_60px_rgb(0,0,0,0.12)] dark:shadow-2xl 
-            overflow-hidden origin-top-right transition-all duration-200 animate-in zoom-in-95 fade-in
+            overflow-x-hidden origin-top-right transition-transform duration-200 animate-in zoom-in-95 fade-in
           ">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800/50">
@@ -211,7 +219,7 @@ export function NotificationBell() {
                 <Activity className="w-4 h-4 text-indigo-400" />
                 <h3 className="font-semibold text-slate-950 dark:text-white">Activity Stream</h3>
               </div>
-              <button 
+              <button type="button" 
                 onClick={clearAll}
                 className="text-xs text-slate-500 hover:text-slate-950 dark:hover:text-white transition-colors"
               >

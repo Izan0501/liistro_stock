@@ -13,6 +13,16 @@ import { format } from 'date-fns';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const formatCurrency = (val: number) => currencyFormatter.format(val);
+    
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('es-AR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+};
+
 export default function Purchases() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -42,6 +52,8 @@ export default function Purchases() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       setIsNewSupplierModalOpen(false);
       setShowSupplierSuccess(true);
       setNewSupplier({ name: '', contact_email: '', contact_phone: '' });
@@ -67,23 +79,13 @@ export default function Purchases() {
     return supplierName.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-    
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
-
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300 p-4 md:p-8 pb-24 md:pb-8">
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in transition-opacity duration-300 p-4 md:p-8 pb-24 md:pb-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Supplier Purchases</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Review past restocks and purchases.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Compras a proveedores</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Revisar restock y nuevas compras.</p>
         </div>
         <HoverButton
           onClick={() => setIsNewSupplierModalOpen(true)}
@@ -98,7 +100,7 @@ export default function Purchases() {
 
       {/* Tabs System */}
       <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-8">
-        <button 
+        <button type="button" 
           onClick={() => setActiveTab('history')}
           className={`py-3 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'history' 
@@ -108,7 +110,7 @@ export default function Purchases() {
         >
           Historial de Restocks
         </button>
-        <button 
+        <button type="button" 
           onClick={() => setActiveTab('directory')}
           className={`py-3 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'directory' 
@@ -125,10 +127,12 @@ export default function Purchases() {
           {/* Filters/Search */}
           <div className="glass-card p-4 flex flex-col md:flex-row gap-4">
             <div className="relative flex-1 max-w-md">
+              <label htmlFor="search-supplier" className="sr-only">Buscar por nombre</label>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
               <input 
+                id="search-supplier"
                 type="text" 
-                placeholder="Search by supplier name..." 
+                placeholder="Buscar por nombre..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-accent-indigo transition-colors text-slate-950 dark:text-white"
@@ -138,7 +142,7 @@ export default function Purchases() {
             <div className="flex items-center gap-2 flex-wrap">
               <DatePickerWithRange date={dateRange} setDate={setDateRange} />
               {dateRange?.from && (
-                <button 
+                <button type="button" 
                   onClick={() => setDateRange(undefined)}
                   className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-950 dark:text-white px-2 py-1 rounded bg-slate-100 dark:bg-white/5"
                 >
@@ -184,9 +188,9 @@ export default function Purchases() {
                       <td className="px-6 py-4 text-right text-slate-500 dark:text-slate-400">{totalItems}</td>
                       <td className="px-6 py-4 text-right font-medium text-red-600 dark:text-red-400">{formatCurrency(purchase.total_amount || purchase.total_cost || 0)}</td>
                       <td className="px-6 py-4 text-center">
-                        <button 
+                        <button type="button" 
                           onClick={() => setSelectedPurchase(purchase)}
-                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 rounded bg-slate-100 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-all"
+                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 rounded bg-slate-100 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-colors transition-opacity"
                           title="Ver Detalle"
                         >
                           <FileText className="w-4 h-4" />
@@ -222,11 +226,11 @@ export default function Purchases() {
                   </div>
                   <div className="flex justify-between items-center text-sm border-t border-slate-200 dark:border-slate-800 pt-3">
                     <div className="text-xs text-slate-500 dark:text-slate-400">{totalItems} Items</div>
-                    <button 
+                    <button type="button" 
                       onClick={() => setSelectedPurchase(purchase)}
                       className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-400"
                     >
-                      <FileText className="w-3.5 h-3.5" /> View Receipt
+                      <FileText className="w-3.5 h-3.5" /> Ver Recibo
                     </button>
                   </div>
                 </div>
@@ -248,7 +252,7 @@ export default function Purchases() {
               </div>
               <h3 className="text-lg font-semibold text-slate-950 dark:text-white mb-2">No Suppliers Found</h3>
               <p className="text-slate-400 text-sm max-w-sm mb-6">You haven't added any suppliers yet. Create your first supplier to start tracking purchases and restocks.</p>
-              <button 
+              <button type="button" 
                 onClick={() => setIsNewSupplierModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-slate-800 hover:bg-slate-700 text-slate-950 dark:text-white transition-colors"
               >
@@ -258,34 +262,7 @@ export default function Purchases() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {suppliersList.map((supplier: any) => (
-                <div 
-                  key={supplier.id} 
-                  onClick={() => setSelectedEditSupplier(supplier)}
-                  className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 hover:border-indigo-200 dark:hover:border-slate-700 transition-colors flex flex-col gap-4 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-lg group-hover:bg-indigo-500/20 transition-colors">
-                      <Building2 className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{supplier.name}</h3>
-                  </div>
-                    <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-slate-800/50">
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-4 h-4 text-slate-500 shrink-0" />
-                        <span className="text-sm text-slate-400 truncate">
-                          {supplier.email || supplier.contact_email || 'No email provided'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Phone className="w-4 h-4 text-slate-500 shrink-0" />
-                        <span className="text-sm text-slate-400">
-                          {supplier.phone || supplier.contact_phone || 'No phone provided'}
-                        </span>
-                      </div>
-                    </div>
-                </div>
-              ))}
+              <SuppliersGrid suppliersList={suppliersList} setSelectedEditSupplier={setSelectedEditSupplier} />
             </div>
           )}
         </>
@@ -293,63 +270,17 @@ export default function Purchases() {
 
       <PurchaseReceiptModal purchase={selectedPurchase} onClose={() => setSelectedPurchase(null)} />
 
-      {/* New Supplier Modal */}
-      {isNewSupplierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="relative bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 transition-colors">
-            <GlowContainer className="p-6">
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white mb-6">New Supplier</h2>
-              <form onSubmit={handleCreateSupplier} className="space-y-4">
-              <AppInput
-                label="Nombre del Proveedor"
-                type="text"
-                required
-                value={newSupplier.name}
-                onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })}
-                placeholder="Ej. Distribuidora Norte S.A."
-                accentColor="indigo"
-              />
-              <AppInput
-                label="Email de Contacto (Opcional)"
-                type="email"
-                value={newSupplier.contact_email}
-                onChange={e => setNewSupplier({ ...newSupplier, contact_email: e.target.value })}
-                placeholder="proveedor@empresa.com"
-                accentColor="indigo"
-              />
-              <AppInput
-                label="Teléfono de Contacto (Opcional)"
-                type="tel"
-                value={newSupplier.contact_phone}
-                onChange={e => setNewSupplier({ ...newSupplier, contact_phone: e.target.value })}
-                placeholder="+54 11 0000-0000"
-                accentColor="indigo"
-              />
-              <div className="flex gap-3 pt-6">
-                <button 
-                  type="button"
-                  onClick={() => setIsNewSupplierModalOpen(false)}
-                  className="flex-1 h-10 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <HoverButton
-                  type="submit"
-                  disabled={createSupplierMutation.isPending}
-                  className="flex-1"
-                  glowColor="#6366f1"
-                  backgroundColor="#0f172a"
-                >
-                  {createSupplierMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Save Supplier
-                </HoverButton>
-              </div>
-            </form>
-            </GlowContainer>
-          </div>
-        </div>
-      )}
-
+      <NewSupplierModal
+        isOpen={isNewSupplierModalOpen}
+        onClose={() => setIsNewSupplierModalOpen(false)}
+        newSupplier={newSupplier}
+        setNewSupplier={setNewSupplier}
+        handleCreateSupplier={handleCreateSupplier}
+        isPending={createSupplierMutation.isPending}
+        AppInput={AppInput}
+        HoverButton={HoverButton}
+        Loader2={Loader2}
+      />
       {/* Edit Supplier Modal */}
       {selectedEditSupplier && (
         <EditSupplierModal
@@ -366,8 +297,83 @@ export default function Purchases() {
         />
       )}
 
-      {/* Success Modal */}
-      {(showSupplierSuccess || showEditSuccess || showDeleteSuccess) && (
+      <SupplierSuccessModal
+        showSupplierSuccess={showSupplierSuccess}
+        showEditSuccess={showEditSuccess}
+        showDeleteSuccess={showDeleteSuccess}
+        setShowSupplierSuccess={setShowSupplierSuccess}
+        setShowEditSuccess={setShowEditSuccess}
+        setShowDeleteSuccess={setShowDeleteSuccess}
+        Confetti={Confetti}
+        Check={Check}
+        cn={cn}
+      />
+    </div>
+  );
+}
+
+function NewSupplierModal({ isOpen, onClose, newSupplier, setNewSupplier, handleCreateSupplier, isPending, AppInput, HoverButton, Loader2 }: any) {
+  if (!isOpen) return null;
+  return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 transition-colors">
+            <GlowContainer className="p-6">
+              <h2 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white mb-6">New Supplier</h2>
+              <form onSubmit={handleCreateSupplier} className="space-y-4">
+              <AppInput
+                label="Nombre del Proveedor"
+                type="text"
+                required
+                value={newSupplier.name}
+                onChange={(e: any) => setNewSupplier({ ...newSupplier, name: e.target.value })}
+                placeholder="Ej. Distribuidora Norte S.A."
+                accentColor="indigo"
+              />
+              <AppInput
+                label="Email de Contacto (Opcional)"
+                type="email"
+                value={newSupplier.contact_email}
+                onChange={(e: any) => setNewSupplier({ ...newSupplier, contact_email: e.target.value })}
+                placeholder="proveedor@empresa.com"
+                accentColor="indigo"
+              />
+              <AppInput
+                label="Teléfono de Contacto (Opcional)"
+                type="tel"
+                value={newSupplier.contact_phone}
+                onChange={(e: any) => setNewSupplier({ ...newSupplier, contact_phone: e.target.value })}
+                placeholder="+54 11 0000-0000"
+                accentColor="indigo"
+              />
+              <div className="flex gap-3 pt-6">
+                <button 
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 h-10 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <HoverButton
+                  type="submit"
+                  disabled={isPending}
+                  className="flex-1"
+                  glowColor="#6366f1"
+                  backgroundColor="#0f172a"
+                >
+                  {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Supplier
+                </HoverButton>
+              </div>
+            </form>
+            </GlowContainer>
+          </div>
+        </div>
+  );
+}
+
+function SupplierSuccessModal({ showSupplierSuccess, showEditSuccess, showDeleteSuccess, setShowSupplierSuccess, setShowEditSuccess, setShowDeleteSuccess, Confetti, Check, cn }: any) {
+  if (!(showSupplierSuccess || showEditSuccess || showDeleteSuccess)) return null;
+  return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <Confetti
             manualstart={false}
@@ -381,7 +387,7 @@ export default function Purchases() {
           />
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
           
-          <div className="relative w-full max-w-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl transform transition-all z-50 animate-in zoom-in-95 duration-300 flex flex-col items-center">
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl transform transition-colors transition-transform transition-shadow z-50 animate-in zoom-in-95 duration-300 flex flex-col items-center">
             <div className={cn("mx-auto flex h-20 w-20 items-center justify-center rounded-full mb-6 ring-8", showDeleteSuccess ? "bg-red-50 dark:bg-red-500/10 ring-red-50/50 dark:ring-red-500/5" : "bg-emerald-50 dark:bg-emerald-500/10 ring-emerald-50/50 dark:ring-emerald-500/5")}>
               <Check className={cn("h-10 w-10", showDeleteSuccess ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400")} strokeWidth={2.5} />
             </div>
@@ -397,7 +403,7 @@ export default function Purchases() {
                   : 'El proveedor ha sido eliminado del directorio.'}
             </p>
             
-            <button 
+            <button type="button" 
               onClick={() => {
                 setShowSupplierSuccess(false);
                 setShowEditSuccess(false);
@@ -409,7 +415,41 @@ export default function Purchases() {
             </button>
           </div>
         </div>
-      )}
-    </div>
+  );
+}
+
+function SuppliersGrid({ suppliersList, setSelectedEditSupplier }: any) {
+  return (
+    <>
+      {suppliersList.map((supplier: any) => (
+        <button 
+          type="button"
+          key={supplier.id} 
+          onClick={() => setSelectedEditSupplier(supplier)}
+          className="text-left block w-full bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 hover:border-indigo-200 dark:hover:border-slate-700 transition-colors flex flex-col gap-4 cursor-pointer group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-lg group-hover:bg-indigo-500/20 transition-colors">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{supplier.name}</h3>
+          </div>
+            <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-slate-800/50">
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="text-sm text-slate-400 truncate">
+                  {supplier.email || supplier.contact_email || 'No email provided'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="text-sm text-slate-400">
+                  {supplier.phone || supplier.contact_phone || 'No phone provided'}
+                </span>
+              </div>
+            </div>
+        </button>
+      ))}
+    </>
   );
 }

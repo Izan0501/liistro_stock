@@ -83,7 +83,7 @@ export const AppInput = forwardRef<HTMLInputElement, AppInputProps>(
               onBlur?.(e);
             }}
             className={cn(
-              "relative z-10 w-full py-3 text-sm transition-all rounded-xl focus:outline-none",
+              "relative z-10 w-full py-3 text-sm transition-colors rounded-xl focus:outline-none",
               "bg-transparent border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20",
               "dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:ring-0",
               icon ? 'pl-9 pr-4' : 'px-4',

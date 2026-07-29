@@ -10,7 +10,7 @@ const SubmitButton = ({ loading, label }: { loading: boolean; label: string }) =
   <button
     type="submit"
     disabled={loading}
-    className="group relative w-full overflow-hidden rounded-xl bg-indigo-600 px-6 py-3.5 font-semibold text-white transition-all duration-300 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
+    className="group relative w-full overflow-hidden rounded-xl bg-indigo-600 px-6 py-3.5 font-semibold text-white transition-colors transition-opacity transition-shadow duration-300 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
   >
     {/* Skew shine on hover */}
     <span className="absolute inset-0 -translate-x-full skew-x-12 bg-white/10 transition-transform duration-500 group-hover:translate-x-full" />
@@ -71,7 +71,7 @@ export default function Login() {
       const response = await api.post('/auth/login', payload);
       const { access_token } = response.data;
 
-      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('auth:v1', access_token);
       const userResponse = await api.get('/auth/me');
       const user = userResponse.data;
       login(access_token, user);
@@ -99,7 +99,7 @@ export default function Login() {
       >
         {/* Background radial glow tracking cursor */}
         <div
-          className="pointer-events-none absolute inset-0 transition-all duration-500"
+          className="pointer-events-none absolute inset-0 transition-colors duration-500"
           style={{
             background: `radial-gradient(600px circle at ${glowPos.x}% ${glowPos.y}%, rgba(99,102,241,0.08), transparent 60%)`,
           }}
@@ -145,7 +145,7 @@ export default function Login() {
 
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <label htmlFor="login-password" className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
                   Password
                 </label>
                 <a href="#" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
@@ -153,6 +153,7 @@ export default function Login() {
                 </a>
               </div>
               <AppInput
+                id="login-password"
                 type="password"
                 required
                 value={password}

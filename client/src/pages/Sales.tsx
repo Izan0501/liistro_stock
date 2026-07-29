@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Phone, Loader2, Check, Plus, Minus, ChevronRight, ShoppingBag } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -12,12 +12,12 @@ import { useNotificationStore } from '../hooks/useNotificationStore';
 
 function HybridQuantityInput({ inCart, maxStock, onUpdate }: any) {
   const [inputValue, setInputValue] = useState(inCart === 0 ? '' : inCart.toString());
+  const [prevInCart, setPrevInCart] = useState(inCart);
 
-  useEffect(() => {
-    if (inCart !== parseInt(inputValue, 10)) {
-      setInputValue(inCart === 0 ? '' : inCart.toString());
-    }
-  }, [inCart]);
+  if (inCart !== prevInCart) {
+    setPrevInCart(inCart);
+    setInputValue(inCart === 0 ? '' : inCart.toString());
+  }
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -52,7 +52,7 @@ function HybridQuantityInput({ inCart, maxStock, onUpdate }: any) {
 
   if (inCart === 0) {
     return (
-      <button 
+      <button type="button" aria-label="Añadir al carrito"
         onClick={() => onUpdate(1)}
         disabled={maxStock <= 0}
         className={cn(
@@ -68,9 +68,9 @@ function HybridQuantityInput({ inCart, maxStock, onUpdate }: any) {
 
   return (
     <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/50 w-fit">
-      <button 
+      <button type="button" aria-label="Reducir cantidad"
         onClick={() => onUpdate(Math.max(0, inCart - 1))}
-        className="p-2 text-slate-500 hover:text-slate-950 hover:bg-white dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 rounded-lg transition-all shadow-sm dark:shadow-none active:scale-95 disabled:opacity-50"
+        className="p-2 text-slate-500 hover:text-slate-950 hover:bg-white dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 rounded-lg transition-colors transition-opacity transition-transform transition-shadow shadow-sm dark:shadow-none active:scale-95 disabled:opacity-50"
       >
         <Minus className="w-4 h-4 sm:w-5 sm:h-5"/>
       </button>
@@ -86,9 +86,9 @@ function HybridQuantityInput({ inCart, maxStock, onUpdate }: any) {
         aria-label="Cantidad"
       />
       
-      <button 
+      <button type="button" aria-label="Aumentar cantidad"
         onClick={() => onUpdate(Math.min(maxStock, inCart + 1))}
-        className="p-2 text-slate-500 hover:text-slate-950 hover:bg-white dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 rounded-lg transition-all shadow-sm dark:shadow-none active:scale-95 disabled:opacity-50"
+        className="p-2 text-slate-500 hover:text-slate-950 hover:bg-white dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 rounded-lg transition-colors transition-opacity transition-transform transition-shadow shadow-sm dark:shadow-none active:scale-95 disabled:opacity-50"
         disabled={inCart >= maxStock}
       >
         <Plus className="w-4 h-4 sm:w-5 sm:h-5"/>
@@ -122,9 +122,12 @@ export default function Sales() {
 
   const uniqueCategories = Array.from(
     new Set(
-      productList
-        .map((p: any) => p.category)
-        .filter((cat: any) => cat && cat.toLowerCase() !== 'general')
+      productList.reduce((acc: string[], p: any) => {
+        if (p.category && p.category.toLowerCase() !== 'general') {
+          acc.push(p.category);
+        }
+        return acc;
+      }, [])
     )
   ).sort() as string[];
 
@@ -142,6 +145,8 @@ export default function Sales() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       setIsCreatingClient(false);
       handleSelectClient(data); // Auto-select the newly created client
       setNewClient({ name: '', address: '', phone: '', company: '' });
@@ -157,6 +162,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       setShowSuccessModal(true);
 
       // ── Dispatch sale activity notification ───────────────────────────────
@@ -215,11 +221,18 @@ export default function Sales() {
   const handleCreateSale = () => {
     if (!selectedClient || cart.length === 0) return;
     
-    const items = cart.map(item => ({
-      product_id: item.product.id,
-      quantity: item.qty,
-      unit_price: Number(item.product.sell_price ?? item.product.sellPrice ?? 0)
-    }));
+    const items = cart.reduce((acc: any[], item: any) => {
+      const p = productList.find((p: any) => p.id === item.product.id);
+      if (p) {
+        acc.push({ 
+          product_id: item.product.id,
+          quantity: item.qty,
+          unit_price: Number(item.product.sell_price ?? item.product.sellPrice ?? 0),
+          unit_cost: Number(p.buy_price ?? 0)
+        });
+      }
+      return acc;
+    }, []);
 
     createSaleMutation.mutate({
       client_id: selectedClient.id,
@@ -253,7 +266,7 @@ export default function Sales() {
   }, 0);
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)] p-4 md:p-8 pb-24 md:pb-8 animate-in fade-in duration-300">
+    <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)] p-4 md:p-8 pb-24 md:pb-8 animate-in fade-in transition-opacity duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
@@ -263,7 +276,7 @@ export default function Sales() {
           </p>
         </div>
         {step === 2 && (
-          <button 
+          <button type="button" 
             onClick={() => setStep(1)}
             className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-950 dark:text-slate-950 dark:text-white px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5"
           >
@@ -275,50 +288,124 @@ export default function Sales() {
       {step === 1 && (
         <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           <div className="relative shrink-0">
+            <label htmlFor="search-client" className="sr-only">Buscar Clientes</label>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 dark:text-slate-400" />
             <input 
+              id="search-client"
               type="text" 
-              placeholder="Search clients..." 
+              placeholder="Buscar clientes..." 
               value={searchClient}
               onChange={(e) => setSearchClient(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl pl-11 pr-4 py-4 text-lg text-slate-950 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-all shadow-sm"
+              className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl pl-11 pr-4 py-4 text-lg text-slate-950 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 transition-colors transition-shadow shadow-sm"
             />
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-3 pb-4">
-            {isCreatingClient ? (
-              <div className="glass-card p-4 space-y-4 animate-in fade-in slide-in-from-top-4 duration-200">
+            <ClientSelectionStep
+              isCreatingClient={isCreatingClient}
+              setIsCreatingClient={setIsCreatingClient}
+              newClient={newClient}
+              setNewClient={setNewClient}
+              handleCreateClient={handleCreateClient}
+              createClientMutation={createClientMutation}
+              filteredClients={filteredClients}
+              handleSelectClient={handleSelectClient}
+              HoverButton={HoverButton}
+              Loader2={Loader2}
+              Plus={Plus}
+              MapPin={MapPin}
+              Phone={Phone}
+              ChevronRight={ChevronRight}
+            />
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+           <SalesProductSelectionStep
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            uniqueCategories={uniqueCategories}
+            productsLoading={productsLoading}
+            filteredProducts={filteredProducts}
+            cart={cart}
+            updateQuantity={updateQuantity}
+            handleCreateSale={handleCreateSale}
+            createSaleMutation={createSaleMutation}
+            total={total}
+            Search={Search}
+            Loader2={Loader2}
+            HybridQuantityInput={HybridQuantityInput}
+            ShoppingBag={ShoppingBag}
+            cn={cn}
+          />
+        </div>
+      )}
+
+      <SalesSuccessModal 
+        showSuccessModal={showSuccessModal}
+        handleCloseSuccess={handleCloseSuccess}
+        Confetti={Confetti}
+        Check={Check}
+      />
+    </div>
+  );
+}
+
+function ClientSelectionStep({ isCreatingClient, setIsCreatingClient, newClient, setNewClient, handleCreateClient, createClientMutation, filteredClients, handleSelectClient, HoverButton, Loader2, Plus, MapPin, Phone, ChevronRight }: any) {
+  if (isCreatingClient) {
+    return (
+              <div className="glass-card p-4 space-y-4 animate-in fade-in slide-in-from-top-4 transition-opacity duration-200">
                 <h3 className="font-medium text-lg">New Client</h3>
                 <form onSubmit={handleCreateClient} className="space-y-3">
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="Client Name" 
-                    value={newClient.name}
-                    onChange={e => setNewClient({ ...newClient, name: e.target.value })}
-                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="Company (Optional)" 
-                    value={newClient.company}
-                    onChange={e => setNewClient({ ...newClient, company: e.target.value })}
-                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="Address" 
-                    value={newClient.address}
-                    onChange={e => setNewClient({ ...newClient, address: e.target.value })}
-                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                  />
-                  <input 
-                    type="tel" 
-                    placeholder="Phone" 
-                    value={newClient.phone}
-                    onChange={e => setNewClient({ ...newClient, phone: e.target.value })}
-                    className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                  />
+                  <div>
+                    <label htmlFor="client-name" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Client Name</label>
+                    <input 
+                      id="client-name"
+                      type="text" 
+                      required
+                      placeholder="Client Name" 
+                      value={newClient.name}
+                      onChange={(e: any) => setNewClient({ ...newClient, name: e.target.value })}
+                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="client-company" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Company (Optional)</label>
+                    <input 
+                      id="client-company"
+                      type="text" 
+                      placeholder="Company (Optional)" 
+                      value={newClient.company}
+                      onChange={(e: any) => setNewClient({ ...newClient, company: e.target.value })}
+                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="client-address" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Address</label>
+                    <input 
+                      id="client-address"
+                      type="text" 
+                      placeholder="Address" 
+                      value={newClient.address}
+                      onChange={(e: any) => setNewClient({ ...newClient, address: e.target.value })}
+                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="client-phone" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+                    <input 
+                      id="client-phone"
+                      type="tel" 
+                      placeholder="Phone" 
+                      value={newClient.phone}
+                      onChange={(e: any) => setNewClient({ ...newClient, phone: e.target.value })}
+                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+                    />
+                  </div>
                   <div className="flex gap-3 pt-2">
                     <button 
                       type="button"
@@ -340,21 +427,24 @@ export default function Sales() {
                   </div>
                 </form>
               </div>
-            ) : (
+    );
+  }
+  
+  return (
               <>
-                <button 
+                <button type="button" 
                   onClick={() => setIsCreatingClient(true)}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:border-indigo-600 dark:hover:border-indigo-400 transition-all font-medium"
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:border-indigo-600 dark:hover:border-indigo-400 transition-colors font-medium"
                 >
                   <Plus className="w-5 h-5" />
                   <span className="font-medium">Crear nuevo cliente</span>
                 </button>
                 
                 {filteredClients.map((client: any) => (
-                  <button 
+                  <button type="button" 
                     key={client.id}
                     onClick={() => handleSelectClient(client)}
-                    className="flex w-full items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer bg-white border-slate-200 text-slate-950 hover:border-indigo-500 hover:shadow-md dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:hover:border-indigo-500 text-left"
+                    className="flex w-full items-center justify-between p-4 rounded-2xl border transition-colors transition-shadow cursor-pointer bg-white border-slate-200 text-slate-950 hover:border-indigo-500 hover:shadow-md dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:hover:border-indigo-500 text-left"
                   >
                     <div>
                       <div className="font-bold text-lg">{client.name}</div>
@@ -367,12 +457,55 @@ export default function Sales() {
                   </button>
                 ))}
               </>
-            )}
+  );
+}
+
+function SalesSuccessModal({ showSuccessModal, handleCloseSuccess, Confetti, Check }: any) {
+  if (!showSuccessModal) return null;
+  return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Confetti Canvas */}
+          <Confetti
+            manualstart={false}
+            className="fixed inset-0 w-full h-full pointer-events-none z-[100]"
+            options={{
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#10b981', '#6366f1', '#f8fafc', '#334155']
+            }}
+          />
+          
+          {/* Modal Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
+          
+          {/* Modal Content */}
+          <div className="relative z-50 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full mx-auto shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl text-center transform transition-colors transition-transform transition-shadow animate-in zoom-in-95 duration-300">
+            {/* Success Icon Container */}
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10 mb-6 ring-8 ring-emerald-50/50 dark:ring-emerald-500/5">
+              <Check className="h-10 w-10 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-slate-950 dark:text-white mb-2">
+              Entrega Concretada
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-8">
+              La venta se registró exitosamente y el inventario ha sido actualizado.
+            </p>
+            
+            <button type="button" 
+              onClick={handleCloseSuccess}
+              className="w-full py-3 px-4 bg-slate-950 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 font-semibold rounded-xl transition-colors shadow-md"
+            >
+              Nueva Venta
+            </button>
           </div>
         </div>
-      )}
+  );
+}
 
-      {step === 2 && (
+function SalesProductSelectionStep({ searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, uniqueCategories, productsLoading, filteredProducts, cart, updateQuantity, handleCreateSale, createSaleMutation, total, Search, Loader2, HybridQuantityInput, ShoppingBag, cn }: any) {
+  return (
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 pb-24">
             <h3 className="py-3 mb-4 border-b border-slate-200 dark:border-slate-800 text-lg font-semibold text-slate-950 dark:text-white sticky top-0 bg-slate-50 dark:bg-slate-950 z-10">
@@ -380,20 +513,21 @@ export default function Sales() {
             </h3>
             
             <div className="relative mb-3 shrink-0">
+              <label htmlFor="search-products" className="sr-only">Buscar productos</label>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
               <input 
+                id="search-products"
                 type="text" 
                 placeholder="Buscar productos..." 
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 rounded-xl pl-9 pr-4 py-2.5 text-sm transition-all shadow-sm"
+                onChange={(e: any) => setSearchQuery(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 rounded-xl pl-9 pr-4 py-2.5 text-sm transition-colors transition-shadow shadow-sm"
               />
             </div>
             
             <div className="flex w-full gap-2 overflow-x-auto pb-2 scrollbar-hide mb-2 shrink-0">
-              <button
-                onClick={() => setSelectedCategory('All')}
-                className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+              <button type="button"                 onClick={() => setSelectedCategory('All')}
+                className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors transition-shadow",
                   selectedCategory === 'All'
                     ? 'bg-indigo-600 text-white shadow-md border-transparent'
                     : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white shadow-sm'
@@ -401,14 +535,13 @@ export default function Sales() {
               >
                 Todos
               </button>
-              {uniqueCategories.map((category) => (
-                <button
-                  key={category as string}
+              {uniqueCategories.map((category: any) => (
+                <button type="button"                   key={category as string}
                   onClick={() => setSelectedCategory(category as string)}
-                  className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+                  className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors transition-shadow",
                     selectedCategory === category
-                      ? 'bg-indigo-600 text-white shadow-md border-transparent'
-                      : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white shadow-sm'
+                       ? 'bg-indigo-600 text-white shadow-md border-transparent'
+                       : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white shadow-sm'
                   )}
                 >
                   {category as React.ReactNode}
@@ -419,7 +552,7 @@ export default function Sales() {
             {productsLoading ? (
               <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400" /></div>
             ) : filteredProducts.map((product: any) => {
-              const inCart = cart.find(item => item.product.id === product.id)?.qty || 0;
+              const inCart = cart.find((item: any) => item.product.id === product.id)?.qty || 0;
               const stock = product.available_quantity ?? product.stock ?? 0;
               const price = product.sell_price ?? product.sellPrice ?? product.price ?? 0;
               return (
@@ -445,11 +578,11 @@ export default function Sales() {
 
           {/* Checkout Bar (Floating on mobile) */}
           <div className="absolute bottom-0 left-0 right-0 p-4 pb-28 md:p-6 bg-white/90 dark:bg-slate-950/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-30 md:relative md:bg-transparent md:border-0 md:p-0 md:pt-4">
-            <button 
+            <button type="button" 
               onClick={handleCreateSale}
               disabled={cart.length === 0 || createSaleMutation.isPending}
               className={cn(
-                "w-full flex items-center justify-between py-4 px-6 rounded-2xl font-semibold text-lg transition-all duration-300",
+                "w-full flex items-center justify-between py-4 px-6 rounded-2xl font-semibold text-lg transition-colors transition-transform transition-shadow duration-300",
                 cart.length > 0 && !createSaleMutation.isPending
                   ? "bg-emerald-600/10 border border-emerald-500/50 text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] hover:bg-emerald-600/20" 
                   : "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 cursor-not-allowed"
@@ -463,49 +596,5 @@ export default function Sales() {
             </button>
           </div>
         </div>
-      )}
-
-      {/* Success Modal with Confetti */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Confetti Canvas */}
-          <Confetti
-            manualstart={false}
-            className="fixed inset-0 w-full h-full pointer-events-none z-[100]"
-            options={{
-              particleCount: 150,
-              spread: 70,
-              origin: { y: 0.6 },
-              colors: ['#10b981', '#6366f1', '#f8fafc', '#334155']
-            }}
-          />
-          
-          {/* Modal Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-40"></div>
-          
-          {/* Modal Content */}
-          <div className="relative z-50 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full mx-auto shadow-[0_20px_50px_rgb(0,0,0,0.1)] dark:shadow-2xl text-center transform transition-all animate-in zoom-in-95 duration-300">
-            {/* Success Icon Container */}
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10 mb-6 ring-8 ring-emerald-50/50 dark:ring-emerald-500/5">
-              <Check className="h-10 w-10 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
-            </div>
-            
-            <h2 className="text-2xl font-bold text-slate-950 dark:text-white mb-2">
-              Entrega Concretada
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-8">
-              La venta se registró exitosamente y el inventario ha sido actualizado.
-            </p>
-            
-            <button 
-              onClick={handleCloseSuccess}
-              className="w-full py-3 px-4 bg-slate-950 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 font-semibold rounded-xl transition-colors shadow-md"
-            >
-              Nueva Venta
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

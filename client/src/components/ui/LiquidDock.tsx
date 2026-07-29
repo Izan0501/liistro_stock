@@ -14,30 +14,29 @@ export const GlassFilter = () => (
   </svg>
 );
 
+const items = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+  { id: 'inventory', label: 'Inventory', icon: Package, to: '/inventory' },
+  { id: 'purchases', label: 'Proveedores', icon: Truck, to: '/purchases' },
+  { id: 'deliveries', label: 'Entregas', icon: History, to: '/deliveries' },
+  { id: 'sales', label: 'Nueva Venta', icon: ShoppingCart, to: '/sales' },
+];
+
 export const GlassDock = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const items = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
-    { id: 'inventory', label: 'Inventory', icon: Package, to: '/inventory' },
-    { id: 'purchases', label: 'Proveedores', icon: Truck, to: '/purchases' },
-    { id: 'deliveries', label: 'Entregas', icon: History, to: '/deliveries' },
-    { id: 'sales', label: 'Nueva Venta', icon: ShoppingCart, to: '/sales' },
-  ];
-
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex md:hidden items-center gap-2 px-4 py-3 rounded-full bg-slate-950/90 dark:bg-white/90 backdrop-blur-xl border border-slate-800 dark:border-slate-200 shadow-2xl transition-all duration-300">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex md:hidden items-center gap-2 px-4 py-3 rounded-full bg-slate-950/90 dark:bg-white/90 backdrop-blur-xl border border-slate-800 dark:border-slate-200 shadow-2xl transition-colors transition-transform transition-shadow duration-300">
       {items.map((item) => {
         const isActive = location.pathname.startsWith(item.to);
         const Icon = item.icon;
         return (
-          <button
-            key={item.id}
+          <button type="button"             key={item.id}
             onClick={() => navigate(item.to)}
             title={item.label}
             className={cn(
-              "relative group flex items-center justify-center h-12 w-12 rounded-full transition-all duration-300",
+              "relative group flex items-center justify-center h-12 w-12 rounded-full transition-colors transition-shadow duration-300",
               isActive 
                 ? "bg-indigo-600 text-white dark:bg-indigo-100 dark:text-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.3)] dark:shadow-none" 
                 : "text-slate-400 hover:text-slate-200 dark:text-slate-500 dark:hover:text-slate-700 bg-transparent"

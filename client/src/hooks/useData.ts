@@ -99,30 +99,6 @@ export const usePurchases = (dateRange?: { start: string; end: string }) => {
   });
 };
 
-export const useFinancialChartData = () => {
-  return useQuery({
-    queryKey: ['financialChartData'],
-    queryFn: async () => {
-      try {
-        const { data } = await api.get('/analytics/chart-data');
-        return data;
-      } catch (error) {
-        console.warn('Chart data API error:', error);
-        return {
-          metrics: {
-            currentBalance: 0,
-            todaysPnL: 0,
-            pnlPercentage: 0,
-            highValue: 0,
-            lowValue: 0,
-          },
-          chartData: []
-        };
-      }
-    },
-    enabled: !!getAuthToken(),
-  });
-};
 
 export const useRecentActivity = () => {
   return useQuery({

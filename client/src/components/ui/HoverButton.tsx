@@ -31,8 +31,7 @@ export const HoverButton: React.FC<ButtonProps> = ({
   };
 
   return (
-    <button
-      ref={buttonRef}
+    <button type={rest.type || "button"}       ref={buttonRef}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onMouseMove={handleMouseMove}
@@ -63,7 +62,7 @@ export const HoverButton: React.FC<ButtonProps> = ({
       />
       {/* Outer shadow pulse */}
       <span
-        className={`pointer-events-none absolute -inset-1 rounded-xl blur-md transition-all duration-300 -z-10 ${isHovered ? 'scale-125' : 'scale-0'}`}
+        className={`pointer-events-none absolute -inset-1 rounded-xl blur-md transition-transform duration-300 -z-10 ${isHovered ? 'scale-125' : 'scale-0'}`}
         style={{
           background: `radial-gradient(ellipse at center, ${glowColor}44, transparent 70%)`,
           opacity: isHovered ? 1 : 0,
