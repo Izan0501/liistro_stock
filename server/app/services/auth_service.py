@@ -38,6 +38,7 @@ from app.schemas.auth import (
 settings = get_settings()
 
 
+
 def _effective_registration_secret() -> str:
     """
     Return the secret that incoming registration requests must supply.
@@ -81,7 +82,7 @@ async def register_user(
     # ── 3. Persist new user ──────────────────────────────────────────────────
     user = User(
         id=uuid.uuid4(),
-        name=payload.name,
+        name=payload.full_name,
         email=payload.email.lower(),
         hashed_password=hash_password(payload.password),
         role="admin",
@@ -118,6 +119,7 @@ async def authenticate_user(
         raise UnauthorizedError("Account is deactivated.")
 
     token = create_access_token(subject=str(user.id))
+    
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -136,9 +138,17 @@ async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User:
 async def change_password(
     db: AsyncSession, user: User, payload: ChangePasswordRequest
 ) -> None:
-    """Change authenticated user's password after verifying the current one."""
-    if not verify_password(payload.current_password, user.hashed_password):
-        raise UnauthorizedError("Current password is incorrect.")
+    """
+    Change authenticated user's password using the system registration secret
+    as a master-override. No knowledge of the current password is required.
+
+    Security:
+    - `secrets.compare_digest` prevents timing-oracle attacks on the key.
+    - The supplied secret is never logged or echoed back.
+    """
+    expected = _effective_registration_secret()
+    if not secrets.compare_digest(payload.secret_key, expected):
+        raise ForbiddenError("Clave de registro de sistema inválida.")
     user.hashed_password = hash_password(payload.new_password)
     db.add(user)
     await db.commit()

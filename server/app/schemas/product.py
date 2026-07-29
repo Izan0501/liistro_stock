@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SupplierMinimalResponse(BaseModel):
@@ -83,8 +83,15 @@ class ProductListResponse(BaseModel):
 class StockAdjustRequest(BaseModel):
     """Adjust available_quantity. Positive delta = restock (creates Purchase). Negative = write-off."""
 
-    quantity_delta: int = Field(..., description="Positive to add stock, negative to subtract")
-    reason: str | None = Field(None, max_length=500, description="Optional reason or notes for this adjustment")
+    quantity: int = Field(..., description="Positive to add stock, negative to subtract")
+    reason: str = Field("Restock manual", max_length=500, description="Optional reason or notes for this adjustment")
     # For restocks: optionally override which supplier and unit_price to record
     supplier_id: uuid.UUID | None = Field(None, description="Override product's default supplier for this restock")
     unit_price: Decimal | None = Field(None, gt=Decimal("0"), description="Override unit cost recorded for this restock")
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def set_default_reason(cls, v: str | None) -> str:
+        if not v or not str(v).strip():
+            return "Restock manual"
+        return str(v)

@@ -93,7 +93,7 @@ async def get_recent_activity(db: AsyncSession) -> list[RecentActivity]:
     purchases_rows = await db.execute(
         select(
             Purchase.id,
-            func.coalesce(Supplier.name, "Sin Proveedor").label("supplier_name"),
+            func.coalesce(Supplier.name, "Desconocido").label("supplier_name"),
             Purchase.total_amount,
             Purchase.purchase_date,
             Purchase.notes,

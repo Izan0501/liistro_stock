@@ -6,9 +6,10 @@ Pydantic v2 schemas for authentication flows.
 from __future__ import annotations
 
 import uuid
+import re
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 class UserRegisterRequest(BaseModel):
@@ -18,28 +19,35 @@ class UserRegisterRequest(BaseModel):
     and is never echoed back in any response.
     """
 
-    name: str = Field(..., min_length=2, max_length=120)
+    full_name: str = Field(..., min_length=2, max_length=120)
     email: EmailStr
-    password: str = Field(..., min_length=8, max_length=128)
+    password: str = Field(...)
+    confirm_password: str = Field(...)
     # Write-only — gating field so random internet users cannot self-register
     secret_key: str = Field(..., min_length=1, description="Registration secret key")
 
     @field_validator("password")
     @classmethod
-    def password_strength(cls, v: str) -> str:
-        errors: list[str] = []
-        if not any(c.isupper() for c in v):
-            errors.append("at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            errors.append("at least one digit")
-        if errors:
-            raise ValueError(f"Password must contain: {', '.join(errors)}")
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('La contraseña debe tener al menos 8 caracteres.')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula.')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('La contraseña debe contener al menos una letra minúscula.')
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            raise ValueError('La contraseña debe contener al menos un símbolo especial.')
         return v
+        
+    @model_validator(mode="after")
+    def passwords_match(self) -> "UserRegisterRequest":
+        if self.password != self.confirm_password:
+            raise ValueError("Las contraseñas no coinciden.")
+        return self
 
 
 class UserLoginRequest(BaseModel):
     """Payload for POST /auth/login"""
-
     email: EmailStr
     password: str
 
@@ -86,7 +94,12 @@ class UserProfileUpdateRequest(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
+    """
+    Master-override password change.
+    `secret_key` must match the server-side REGISTRATION_SECRET_KEY — no
+    knowledge of the current password is required.
+    """
+    secret_key: str = Field(..., min_length=1, description="System registration secret key")
     new_password: str = Field(..., min_length=8, max_length=128)
 
     @field_validator("new_password")

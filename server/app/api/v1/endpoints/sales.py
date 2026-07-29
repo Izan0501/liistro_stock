@@ -16,13 +16,17 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.sale import (
     SaleCreateRequest,
+    SaleCreateResponseWrapper,
     SaleItemResponse,
     SaleListResponse,
+    LowStockAlert,
     SaleResponse,
 )
 from app.services import sale_service
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
+
+LOW_STOCK_THRESHOLD = 10
 
 
 def _sale_to_response(sale: object) -> SaleResponse:
@@ -47,15 +51,15 @@ def _sale_to_response(sale: object) -> SaleResponse:
 
 @router.post(
     "",
-    response_model=SaleResponse,
+    response_model=SaleCreateResponseWrapper,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a sale and atomically deduct stock",
+    summary="Create a sale, deduct stock, and return low-stock alerts",
 )
 async def create_sale(
     payload: SaleCreateRequest,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
-) -> SaleResponse:
+) -> SaleCreateResponseWrapper:
     """
     Triggers the ACID transaction:
     - Validates stock for all items
@@ -64,9 +68,39 @@ async def create_sale(
     - Writes StockMovement (OUT) audit entries
     - Updates FinancialConfig capital
     All-or-nothing: any failure rolls back the entire transaction.
+
+    After commit, evaluates remaining stock for each affected product.
+    Any product at or below LOW_STOCK_THRESHOLD (10) is appended to
+    low_stock_alerts so the frontend can surface a warning to the user.
     """
     sale = await sale_service.create_sale(db, payload)
-    return _sale_to_response(sale)
+    sale_response = _sale_to_response(sale)
+
+    # ── Build low-stock alert list from eagerly-loaded items ──────────────────
+    low_stock_alerts: list[LowStockAlert] = []
+    if getattr(sale, "items", None):
+        from app.models.sale import SaleItem  # local import to avoid circular
+        seen: set[uuid.UUID] = set()
+        for item in sale.items:  # type: ignore[union-attr]
+            si: SaleItem = item  # type: ignore[assignment]
+            product = getattr(si, "product", None)
+            if product is None or si.product_id in seen:
+                continue
+            seen.add(si.product_id)
+            if product.available_quantity <= LOW_STOCK_THRESHOLD:
+                low_stock_alerts.append(
+                    LowStockAlert(
+                        product_id=product.id,
+                        product_name=product.name,
+                        remaining_stock=product.available_quantity,
+                    )
+                )
+
+    return SaleCreateResponseWrapper(
+        status="success",
+        data=sale_response,
+        low_stock_alerts=low_stock_alerts,
+    )
 
 
 @router.get(

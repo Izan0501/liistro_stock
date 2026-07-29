@@ -64,6 +64,19 @@ async def list_products(
 
 
 @router.get(
+    "/categories",
+    response_model=list[str],
+    status_code=status.HTTP_200_OK,
+    summary="Get all unique product categories",
+)
+async def get_categories(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> list[str]:
+    return await product_service.get_categories(db)
+
+
+@router.get(
     "/{product_id}",
     response_model=ProductResponse,
     status_code=status.HTTP_200_OK,
@@ -99,6 +112,12 @@ async def update_product(
     response_model=ProductResponse,
     status_code=status.HTTP_200_OK,
     summary="Manually adjust product stock quantity",
+)
+@router.post(
+    "/{product_id}/restock",
+    response_model=ProductResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Restock product (Alias for adjust-stock)",
 )
 async def adjust_stock(
     product_id: uuid.UUID,
