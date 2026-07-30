@@ -71,8 +71,8 @@ export default function Purchases() {
     });
   };
 
-  const purchases = Array.isArray(purchasesData) ? purchasesData : (purchasesData?.items || []);
-  const suppliersList = Array.isArray(suppliersData) ? suppliersData : (suppliersData?.items || []);
+  const purchases = Array.isArray(purchasesData) ? purchasesData : (purchasesData?.items || purchasesData?.data || []);
+  const suppliersList = Array.isArray(suppliersData) ? suppliersData : (suppliersData?.items || suppliersData?.data || []);
 
   const filtered = purchases.filter((p: any) => {
     const supplierName = p.supplier?.name || p.supplier_name || 'Desconocido';
@@ -179,7 +179,7 @@ export default function Purchases() {
                       No purchases found for this range.
                     </td>
                   </tr>
-                ) : filtered.map((purchase: any) => {
+                ) : filtered?.map((purchase: any) => {
                   const totalItems = purchase.items?.reduce((acc: number, curr: any) => acc + curr.quantity, 0) || 0;
                   return (
                     <tr key={purchase.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group bg-white dark:bg-transparent text-slate-950 dark:text-white">
@@ -213,7 +213,7 @@ export default function Purchases() {
               <div className="glass-card p-6 text-center text-slate-500 dark:text-slate-400">
                 No purchases found for this range.
               </div>
-            ) : filtered.map((purchase: any) => {
+            ) : filtered?.map((purchase: any) => {
               const totalItems = purchase.items?.reduce((acc: number, curr: any) => acc + curr.quantity, 0) || 0;
               return (
                 <div key={purchase.id} className="glass-card p-4 flex flex-col gap-3">
@@ -421,7 +421,7 @@ function SupplierSuccessModal({ showSupplierSuccess, showEditSuccess, showDelete
 function SuppliersGrid({ suppliersList, setSelectedEditSupplier }: any) {
   return (
     <>
-      {suppliersList.map((supplier: any) => (
+      {suppliersList?.map((supplier: any) => (
         <button 
           type="button"
           key={supplier.id} 

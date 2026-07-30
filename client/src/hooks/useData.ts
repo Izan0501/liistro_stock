@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 
-const getAuthToken = () => localStorage.getItem('access_token');
+const getAuthToken = () => localStorage.getItem('auth:v1');
 
 export const useDashboardMetrics = (dateRange?: { start: string; end: string }) => {
   return useQuery({

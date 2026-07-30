@@ -29,7 +29,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Clean up session and reload to force redirect to login
-      localStorage.removeItem('access_token');
+      localStorage.removeItem('auth:v1');
       localStorage.removeItem('user');
       window.dispatchEvent(new Event('auth-unauthorized'));
     }
