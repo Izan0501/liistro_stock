@@ -48,7 +48,7 @@ from app.models.financial_config import FinancialConfig  # noqa: E402, F401
 config = context.config
 
 # Override the sqlalchemy URL from .env — credentials never live in alembic.ini
-config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"].replace("%", "%%"))
 
 # Wire up Python logging defined in alembic.ini
 if config.config_file_name is not None:
