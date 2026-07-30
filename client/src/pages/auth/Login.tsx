@@ -89,13 +89,13 @@ export default function Login() {
   };
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <main className="fixed inset-0 flex h-[100dvh] w-[100vw] flex-col overflow-hidden overscroll-none touch-none bg-slate-50 dark:bg-slate-950 sm:flex-row transition-colors duration-300">
 
       {/* ── Left: Form Panel ─────────────────────────────────────────── */}
-      <div
+      <section
         ref={formWrapperRef}
         onMouseMove={handleMouseMove}
-        className="relative flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        className="relative flex h-full w-full min-h-0 min-w-0 flex-1 flex-col items-center justify-center px-6 lg:px-16"
       >
         {/* Background radial glow tracking cursor */}
         <div
@@ -109,7 +109,7 @@ export default function Login() {
         <div className="pointer-events-none absolute top-0 left-0 w-72 h-72 rounded-full bg-purple-500/10 blur-3xl -translate-x-1/2 -translate-y-1/2" />
         <div className="pointer-events-none absolute bottom-0 right-0 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl translate-x-1/2 translate-y-1/2" />
 
-        <div className="relative z-10 w-full max-w-sm">
+        <div className="relative z-10 w-full max-w-sm overflow-y-auto py-12 touch-pan-y [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Logo */}
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-8">
@@ -148,9 +148,6 @@ export default function Login() {
                 <label htmlFor="login-password" className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
                   Password
                 </label>
-                <a href="#" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
-                  Forgot password?
-                </a>
               </div>
               <AppInput
                 id="login-password"
@@ -175,9 +172,9 @@ export default function Login() {
             </Link>
           </p>
         </div>
-      </div>
+      </section>
 
-      <div className="hidden lg:block lg:w-1/2 h-screen relative overflow-hidden bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
+      <aside className="relative hidden h-full min-h-0 min-w-0 flex-1 overflow-hidden lg:flex bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
         {/* Hero image */}
         <img
           src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop"
@@ -189,15 +186,12 @@ export default function Login() {
 
         {/* Floating stat badges */}
         <div className="absolute inset-0 z-20 flex flex-col justify-end p-10 gap-3">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">
-            Your business at a glance
-          </p>
           <StatBadge icon={BarChart3} label="Today's Revenue" value="$12,480" color="bg-indigo-600" />
           <StatBadge icon={Package} label="Active SKUs" value="342 products" color="bg-violet-600" />
           <StatBadge icon={TrendingUp} label="Monthly Growth" value="+18.4%" color="bg-emerald-600" />
         </div>
-      </div>
+      </aside>
 
-    </div>
+    </main>
   );
 }

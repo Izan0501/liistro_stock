@@ -140,10 +140,10 @@ export default function Register() {
   };
 
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <main className="fixed inset-0 flex h-[100dvh] w-[100vw] flex-col overflow-hidden overscroll-none touch-none bg-slate-50 dark:bg-slate-950 sm:flex-row transition-colors duration-300">
 
       {/* ── Right: Hero Image Panel (shown first for register, so form is on right) ── */}
-      <div className="hidden lg:block lg:w-1/2 h-screen relative overflow-hidden bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
+      <aside className="relative hidden h-full min-h-0 min-w-0 flex-1 overflow-hidden lg:flex bg-slate-100 dark:bg-slate-900 transition-colors duration-300">
         <img
           src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop"
           alt="Warehouse logistics"
@@ -154,9 +154,6 @@ export default function Register() {
 
         {/* Overlay content */}
         <div className="absolute inset-0 z-20 flex flex-col justify-end p-10 gap-3">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">
-            System capabilities
-          </p>
           <FeatureBadge
             icon={Cpu}
             title="Real-time Inventory Sync"
@@ -176,13 +173,13 @@ export default function Register() {
             color="bg-emerald-600"
           />
         </div>
-      </div>
+      </aside>
 
       {/* ── Right (mobile) / Right (desktop): Form Panel ─── */}
-      <div
+      <section
         ref={formWrapperRef}
         onMouseMove={handleMouseMove}
-        className="relative flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        className="relative flex h-full w-full min-h-0 min-w-0 flex-1 flex-col items-center justify-center px-6 lg:px-16"
       >
         {/* Cursor glow */}
         <div
@@ -196,7 +193,7 @@ export default function Register() {
         <div className="pointer-events-none absolute top-0 right-0 w-72 h-72 rounded-full bg-violet-500/10 blur-3xl translate-x-1/2 -translate-y-1/2" />
         <div className="pointer-events-none absolute bottom-0 left-0 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl -translate-x-1/2 translate-y-1/2" />
 
-        <div className="relative z-10 w-full max-w-sm">
+        <div className="relative z-10 w-full max-w-sm overflow-y-auto py-12 touch-pan-y [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Logo */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-8">
@@ -294,8 +291,8 @@ export default function Register() {
             </Link>
           </p>
         </div>
-      </div>
+      </section>
 
-    </div>
+    </main>
   );
 }
