@@ -21,7 +21,7 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
-  
+
   // Persist sidebar state
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
@@ -31,7 +31,7 @@ export default function MainLayout() {
   useEffect(() => {
     localStorage.setItem('sidebar_collapsed', isCollapsed.toString());
   }, [isCollapsed]);
-  
+
   const handleConfirmLogout = () => {
     setShowLogoutModal(false);
     logout();
@@ -41,13 +41,13 @@ export default function MainLayout() {
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white overflow-hidden selection:bg-accent-indigo/30 transition-colors duration-300">
       <GlassFilter />
       {/* Desktop Sidebar */}
-      <aside 
+      <aside
         className={cn(
           "hidden md:flex flex-col border-r border-slate-800 dark:border-slate-200 bg-slate-950 dark:bg-white text-white dark:text-slate-950 transition-[width,colors,transform] duration-300 ease-in-out relative z-[60] overflow-visible",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
-        <button type="button" 
+        <button type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3.5 top-8 z-[100] flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-900/90 backdrop-blur-md text-slate-400 shadow-sm transition-colors transition-transform transition-shadow duration-300 ease-in-out hover:scale-110 hover:border-indigo-500 hover:text-indigo-400 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
           aria-label="Toggle Sidebar"
@@ -56,12 +56,30 @@ export default function MainLayout() {
         </button>
 
         <div className="h-16 flex shrink-0 items-center px-5 mb-2 overflow-hidden bg-transparent">
-          <div className={cn("flex items-center gap-3 transition-colors", isCollapsed ? "justify-center w-full" : "")}>
-            <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-10 w-auto object-contain rounded-xl shadow-sm sm:h-12 min-w-[32px]" />
-            <span className={cn("mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white whitespace-nowrap overflow-hidden transition-colors duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>NAVE24</span>
+          <div className={cn("flex items-center gap-3", isCollapsed ? "justify-center w-full" : "")}>
+
+            {/* CAJA DEL LOGO: Fondo oscuro en modo claro (bg-slate-950), transparente en modo oscuro (dark:bg-transparent) */}
+            <div className="flex items-center justify-center rounded-xl bg-slate-950 p-1 dark:bg-transparent">
+              <img
+                src="/logo.png"
+                alt="NAVE24 Logo"
+                className="relative z-10 h-10 w-auto min-w-[32px] object-contain sm:h-12"
+              />
+            </div>
+
+            {/* TEXTO: Colores anclados y transición limitada solo a la opacidad/ancho para evitar el rebote */}
+            <span
+              className={cn(
+                "mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white whitespace-nowrap overflow-hidden transition-[opacity,width] duration-200",
+                isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
+              )}
+            >
+              NAVE24
+            </span>
+
           </div>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-none">
           {navItems.map((item) => (
             <NavLink
@@ -71,8 +89,8 @@ export default function MainLayout() {
                 cn(
                   "flex items-center rounded-lg text-sm font-medium transition-colors duration-200 group relative",
                   isCollapsed ? "justify-center p-3" : "px-3 py-2.5 gap-3",
-                  isActive 
-                    ? "bg-indigo-500/10 text-indigo-400 dark:bg-indigo-50 dark:text-indigo-600" 
+                  isActive
+                    ? "bg-indigo-500/10 text-indigo-400 dark:bg-indigo-50 dark:text-indigo-600"
                     : "text-slate-400 hover:text-white hover:bg-slate-800 dark:text-slate-500 dark:hover:text-indigo-600 dark:hover:bg-slate-50"
                 )
               }
@@ -83,9 +101,9 @@ export default function MainLayout() {
             </NavLink>
           ))}
         </nav>
-        
+
         <div className="p-4 pb-6 space-y-2 mt-auto">
-          <button type="button" 
+          <button type="button"
             onClick={() => navigate('/profile')}
             className={cn(
               "w-full flex items-center rounded-lg text-sm font-medium transition-colors group text-slate-400 hover:text-white hover:bg-slate-800 dark:text-slate-500 dark:hover:text-indigo-600 dark:hover:bg-slate-50",
@@ -96,7 +114,7 @@ export default function MainLayout() {
             <UserIcon className={cn("w-4 h-4 flex-shrink-0", isCollapsed ? "w-5 h-5" : "")} />
             <span className={cn("whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>Perfil</span>
           </button>
-          <button type="button" 
+          <button type="button"
             onClick={() => setShowLogoutModal(true)}
             className={cn(
               "w-full flex items-center rounded-lg text-sm font-medium transition-colors group text-slate-400 hover:text-red-400 hover:bg-red-500/10 dark:text-slate-500 dark:hover:text-red-600 dark:hover:bg-red-50",
@@ -116,7 +134,7 @@ export default function MainLayout() {
           <div className="flex items-center gap-4 bg-transparent md:hidden">
             <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-9 w-auto object-contain rounded-xl shadow-sm sm:h-10" />
           </div>
-          
+
           <div className="hidden md:flex flex-1 max-w-md items-center justify-start pl-4">
             {/* Quick Actions Premium Dropdown */}
             <div className="relative group">
@@ -138,7 +156,7 @@ export default function MainLayout() {
                 </div>
 
                 {/* Nueva Venta */}
-                <button type="button"                   onClick={() => navigate('/sales')}
+                <button type="button" onClick={() => navigate('/sales')}
                   className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-indigo-200 dark:group-hover/item:border-indigo-500/30 group-hover/item:bg-indigo-50 dark:group-hover/item:bg-indigo-500/10 group-hover/item:text-indigo-600 dark:group-hover/item:text-indigo-400">
@@ -151,7 +169,7 @@ export default function MainLayout() {
                 </button>
 
                 {/* Nuevo Restock */}
-                <button type="button"                   onClick={() => navigate('/purchases')}
+                <button type="button" onClick={() => navigate('/purchases')}
                   className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-emerald-200 dark:group-hover/item:border-emerald-500/30 group-hover/item:bg-emerald-50 dark:group-hover/item:bg-emerald-500/10 group-hover/item:text-emerald-600 dark:group-hover/item:text-emerald-400">
@@ -164,7 +182,7 @@ export default function MainLayout() {
                 </button>
 
                 {/* Agregar Producto */}
-                <button type="button"                   onClick={() => navigate('/inventory')}
+                <button type="button" onClick={() => navigate('/inventory')}
                   className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-violet-200 dark:group-hover/item:border-violet-500/30 group-hover/item:bg-violet-50 dark:group-hover/item:bg-violet-500/10 group-hover/item:text-violet-600 dark:group-hover/item:text-violet-400">
@@ -180,7 +198,7 @@ export default function MainLayout() {
                 <div className="my-1 mx-3 border-t border-slate-200 dark:border-slate-800/80" />
 
                 {/* Ver Dashboard */}
-                <button type="button"                   onClick={() => navigate('/dashboard')}
+                <button type="button" onClick={() => navigate('/dashboard')}
                   className="group/item flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors group-hover/item:border-amber-200 dark:group-hover/item:border-amber-500/30 group-hover/item:bg-amber-50 dark:group-hover/item:bg-amber-500/10 group-hover/item:text-amber-600 dark:group-hover/item:text-amber-400">
@@ -196,7 +214,7 @@ export default function MainLayout() {
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
-            <button type="button"               onClick={toggleTheme}
+            <button type="button" onClick={toggleTheme}
               className="relative inline-flex h-10 w-20 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 transition-colors duration-500 shadow-inner focus:outline-none"
               aria-label="Toggle Dark Mode"
             >
@@ -204,9 +222,9 @@ export default function MainLayout() {
               {/* Sliding Knob */}
               <div className={`absolute top-1 left-1 flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-slate-950 shadow-md transition-transform duration-500 ${theme === 'dark' ? 'translate-x-10' : 'translate-x-0'}`}>
                 {theme === 'light' ? (
-                  <Sun className="h-4 w-4 text-amber-500"/>
+                  <Sun className="h-4 w-4 text-amber-500" />
                 ) : (
-                  <Moon className="h-4 w-4 text-indigo-400"/>
+                  <Moon className="h-4 w-4 text-indigo-400" />
                 )}
               </div>
             </button>
@@ -216,7 +234,7 @@ export default function MainLayout() {
                 <div className="text-sm font-bold text-slate-950 dark:text-white leading-tight">{user?.name || 'Admin'}</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400">Administrator</div>
               </div>
-              <button 
+              <button
                 type="button"
                 className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 dark:bg-white border-2 border-white dark:border-slate-800 shadow-sm overflow-hidden hover:scale-105 transition-transform duration-300 cursor-pointer group"
                 onClick={() => navigate('/profile')}
@@ -226,7 +244,7 @@ export default function MainLayout() {
                   {user?.name ? user.name.substring(0, 1) : 'A'}
                 </span>
               </button>
-              <button type="button" 
+              <button type="button"
                 onClick={() => setShowLogoutModal(true)}
                 className="md:hidden ml-2 p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 aria-label="Cerrar Sesión"
@@ -270,23 +288,23 @@ export default function MainLayout() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 mb-6">
               <LogOut className="w-8 h-8 text-red-600 dark:text-red-500" />
             </div>
-            
+
             <h3 className="text-2xl font-bold text-slate-950 dark:text-white mb-2">
               ¿Cerrar Sesión?
             </h3>
-            
+
             <p className="text-slate-500 dark:text-slate-400 mb-8">
               ¿Estás seguro de que deseas cerrar sesión? Tendrás que volver a ingresar tus credenciales.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-3 w-full">
-              <button type="button" 
+              <button type="button"
                 onClick={() => setShowLogoutModal(false)}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold transition-colors shadow-sm"
               >
                 Cancelar
               </button>
-              <button type="button" 
+              <button type="button"
                 onClick={handleConfirmLogout}
                 className="w-full px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white font-semibold transition-colors shadow-sm"
               >
