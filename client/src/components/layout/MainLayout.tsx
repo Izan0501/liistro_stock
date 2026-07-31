@@ -56,9 +56,11 @@ export default function MainLayout() {
         </button>
 
         <div className="h-16 flex items-center px-5 mb-2">
-          <div className={cn("flex items-center gap-2 text-xl font-bold tracking-tight transition-colors", isCollapsed ? "justify-center w-full" : "")}>
-            <div className="min-w-[32px] w-8 h-8 rounded bg-indigo-600 flex items-center justify-center text-white">L</div>
-            <span className={cn("whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>Liistro<span className="text-slate-500 dark:text-slate-400 font-medium">Stock</span></span>
+          <div className={cn("flex items-center gap-4 bg-transparent transition-colors", isCollapsed ? "justify-center w-full" : "")}>
+            <div className="relative flex items-center justify-center">
+              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-12 w-auto object-contain mix-blend-screen sm:h-14 min-w-[32px]" />
+            </div>
+            <span className={cn("mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-950 dark:text-slate-100 whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>NAVE24</span>
           </div>
         </div>
         
@@ -113,8 +115,10 @@ export default function MainLayout() {
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
         {/* Top Header */}
         <header className="relative sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-white/80 dark:bg-slate-950/80 px-4 sm:px-6 shadow-sm backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
-          <div className="flex items-center gap-4 md:hidden">
-            <div className="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center text-white font-bold">L</div>
+          <div className="flex items-center gap-4 bg-transparent md:hidden">
+            <div className="relative flex items-center justify-center">
+              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-10 w-auto object-contain mix-blend-screen sm:h-12" />
+            </div>
           </div>
           
           <div className="hidden md:flex flex-1 max-w-md items-center justify-start pl-4">

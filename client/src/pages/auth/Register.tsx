@@ -196,16 +196,16 @@ export default function Register() {
         <div className="relative z-10 w-full max-w-sm overflow-y-auto py-12 touch-pan-y [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Logo */}
           <div className="mb-8">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-[0_0_20px_rgba(99,102,241,0.5)]">
-                L
+            <div className="flex items-center gap-4 bg-transparent mb-8">
+              <div className="relative flex items-center justify-center">
+                <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-12 w-auto object-contain mix-blend-screen sm:h-14" />
               </div>
-              <span className="text-xl font-bold text-slate-950 dark:text-white tracking-tight">
-                Liistro<span className="text-slate-500 dark:text-slate-400 font-medium">Stock</span>
+              <span className="mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-950 dark:text-slate-100 sm:text-3xl">
+                NAVE24
               </span>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">System Initialization</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">Register the Master Admin account</p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Sistema de Registro</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm">Registrar Administrador</p>
           </div>
 
           {/* Error banner */}
@@ -280,14 +280,14 @@ export default function Register() {
             </div>
 
             <div className="pt-2">
-              <SubmitButton loading={loading} label="Initialize System" />
+              <SubmitButton loading={loading} label="Iniciar Sistema" />
             </div>
           </form>
 
           <p className="text-center text-sm text-slate-500 mt-8">
-            Already registered?{' '}
+            Ya tienes usuario?{' '}
             <Link to="/login" className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors">
-              Sign In
+              Iniciar Sesion
             </Link>
           </p>
         </div>
