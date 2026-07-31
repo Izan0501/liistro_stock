@@ -112,11 +112,11 @@ export default function Login() {
         <div className="relative z-10 w-full max-w-sm overflow-y-auto py-12 touch-pan-y [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Logo */}
           <div className="mb-10">
-            <div className="flex items-center gap-4 bg-transparent mb-8">
-              <div className="relative flex items-center justify-center">
-                <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-12 w-auto object-contain mix-blend-screen sm:h-14" />
+            <div className="flex items-center gap-3 bg-transparent mb-8 overflow-hidden">
+              <div className="relative flex shrink-0 items-center justify-center">
+                <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-12 w-auto object-contain rounded-xl shadow-sm sm:h-14" />
               </div>
-              <span className="mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-950 dark:text-slate-100 sm:text-3xl">
+              <span className="mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white transition-colors duration-200 sm:text-3xl">
                 NAVE24
               </span>
             </div>
