@@ -58,16 +58,16 @@ export default function MainLayout() {
         <div className="h-16 flex shrink-0 items-center px-5 mb-2 overflow-hidden bg-transparent">
           <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center w-full" : ""}`}>
 
-            {/* LOGO: Con drop-shadow para modo claro y sin sombra en modo oscuro */}
+            {/* LOGO: Sombra sutil y estándar que funciona en fondos claros y oscuros */}
             <img
               src="/logo.png"
               alt="NAVE24 Logo"
-              className="relative z-10 h-10 w-auto min-w-[32px] object-contain sm:h-12 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] dark:drop-shadow-none"
+              className="relative z-10 h-10 w-auto min-w-[32px] object-contain sm:h-12 drop-shadow-md"
             />
 
-            {/* TEXTO: Opción Nuclear con !important para destruir cualquier variable global del tema */}
+            {/* TEXTO: Lógica invertida (!text-white por defecto, dark:!text-slate-900 para el modo oscuro) */}
             <span
-              className={`mt-1 text-2xl font-semibold leading-none tracking-widest whitespace-nowrap overflow-hidden transition-[opacity,width] duration-200 ${isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"} !text-black dark:!text-white`}
+              className={`mt-1 text-2xl font-semibold leading-none tracking-widest whitespace-nowrap overflow-hidden transition-[opacity,width] duration-200 ${isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"} !text-white dark:!text-slate-900`}
             >
               NAVE24
             </span>
