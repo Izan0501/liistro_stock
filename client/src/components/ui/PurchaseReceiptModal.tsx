@@ -48,7 +48,7 @@ export default function PurchaseReceiptModal({ purchase, onClose }: { purchase: 
         <div className="flex-1 overflow-y-auto scrollbar-hide pb-36 sm:pb-6">
           <div className="p-6 bg-transparent font-mono text-sm print:bg-white print:text-black">
             <div className="text-center mb-6 border-b border-dashed border-slate-300 dark:border-white/20 pb-6 print:border-black/20">
-              <h2 className="text-xl font-black tracking-widest uppercase mb-1">LIISTRO STOCK</h2>
+              <h2 className="text-xl font-black tracking-widest uppercase mb-1">NAVE24</h2>
               <p className="text-slate-500 dark:text-slate-400 text-xs print:text-gray-600">Comprobante de Compra a Proveedor</p>
             </div>
 
