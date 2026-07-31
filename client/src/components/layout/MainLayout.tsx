@@ -58,21 +58,16 @@ export default function MainLayout() {
         <div className="h-16 flex shrink-0 items-center px-5 mb-2 overflow-hidden bg-transparent">
           <div className={cn("flex items-center gap-3", isCollapsed ? "justify-center w-full" : "")}>
 
-            {/* CAJA DEL LOGO: Fondo oscuro en modo claro (bg-slate-950), transparente en modo oscuro (dark:bg-transparent) */}
-            <div className="flex items-center justify-center rounded-xl bg-slate-950 p-1 dark:bg-transparent">
-              <img
-                src="/logo.png"
-                alt="NAVE24 Logo"
-                className="relative z-10 h-10 w-auto min-w-[32px] object-contain sm:h-12"
-              />
-            </div>
+            {/* LOGO: Cero cajas. Usamos un drop-shadow para que el cohete blanco resalte sobre el fondo blanco. En modo oscuro la sombra se apaga. */}
+            <img
+              src="/logo.png"
+              alt="NAVE24 Logo"
+              className="relative z-10 h-10 w-auto min-w-[32px] object-contain sm:h-12 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] dark:drop-shadow-none"
+            />
 
-            {/* TEXTO: Colores anclados y transición limitada solo a la opacidad/ancho para evitar el rebote */}
+            {/* TEXTO: Fuera de la función cn(). Usamos un template string (`) para que Tailwind-Merge no pueda borrar nuestros colores. */}
             <span
-              className={cn(
-                "mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white whitespace-nowrap overflow-hidden transition-[opacity,width] duration-200",
-                isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
-              )}
+              className={`mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white whitespace-nowrap overflow-hidden transition-[opacity,width] duration-200 ${isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"}`}
             >
               NAVE24
             </span>
