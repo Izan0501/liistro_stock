@@ -55,12 +55,12 @@ export default function MainLayout() {
           <ChevronLeft className={cn("h-4 w-4 transition-transform duration-500 ease-in-out", isCollapsed ? "rotate-180" : "rotate-0")} />
         </button>
 
-        <div className="h-16 flex items-center px-5 mb-2">
-          <div className={cn("flex items-center gap-4 bg-transparent transition-colors", isCollapsed ? "justify-center w-full" : "")}>
-            <div className="relative flex items-center justify-center">
-              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-12 w-auto object-contain mix-blend-screen sm:h-14 min-w-[32px]" />
+        <div className="h-16 flex shrink-0 items-center px-5 mb-2 overflow-hidden">
+          <div className={cn("flex items-center gap-3 transition-colors", isCollapsed ? "justify-center w-full" : "")}>
+            <div className="relative flex shrink-0 items-center justify-center rounded-xl bg-slate-950 p-1 dark:bg-transparent dark:p-0">
+              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-10 w-auto object-contain mix-blend-screen sm:h-12 min-w-[32px]" />
             </div>
-            <span className={cn("mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-950 dark:text-slate-100 whitespace-nowrap overflow-hidden transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>NAVE24</span>
+            <span className={cn("mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-slate-100 whitespace-nowrap overflow-hidden transition-all duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>NAVE24</span>
           </div>
         </div>
         
@@ -116,8 +116,8 @@ export default function MainLayout() {
         {/* Top Header */}
         <header className="relative sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-white/80 dark:bg-slate-950/80 px-4 sm:px-6 shadow-sm backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
           <div className="flex items-center gap-4 bg-transparent md:hidden">
-            <div className="relative flex items-center justify-center">
-              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-10 w-auto object-contain mix-blend-screen sm:h-12" />
+            <div className="relative flex shrink-0 items-center justify-center rounded-xl bg-slate-950 p-1 dark:bg-transparent dark:p-0">
+              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-9 w-auto object-contain mix-blend-screen sm:h-10" />
             </div>
           </div>
           
