@@ -56,18 +56,18 @@ export default function MainLayout() {
         </button>
 
         <div className="h-16 flex shrink-0 items-center px-5 mb-2 overflow-hidden bg-transparent">
-          <div className={cn("flex items-center gap-3", isCollapsed ? "justify-center w-full" : "")}>
+          <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center w-full" : ""}`}>
 
-            {/* LOGO: Cero cajas. Usamos un drop-shadow para que el cohete blanco resalte sobre el fondo blanco. En modo oscuro la sombra se apaga. */}
+            {/* LOGO: Con drop-shadow para modo claro y sin sombra en modo oscuro */}
             <img
               src="/logo.png"
               alt="NAVE24 Logo"
               className="relative z-10 h-10 w-auto min-w-[32px] object-contain sm:h-12 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] dark:drop-shadow-none"
             />
 
-            {/* TEXTO: Fuera de la función cn(). Usamos un template string (`) para que Tailwind-Merge no pueda borrar nuestros colores. */}
+            {/* TEXTO: Opción Nuclear con !important para destruir cualquier variable global del tema */}
             <span
-              className={`mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white whitespace-nowrap overflow-hidden transition-[opacity,width] duration-200 ${isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"}`}
+              className={`mt-1 text-2xl font-semibold leading-none tracking-widest whitespace-nowrap overflow-hidden transition-[opacity,width] duration-200 ${isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"} !text-black dark:!text-white`}
             >
               NAVE24
             </span>
