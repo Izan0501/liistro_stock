@@ -57,9 +57,7 @@ export default function MainLayout() {
 
         <div className="h-16 flex shrink-0 items-center px-5 mb-2 overflow-hidden bg-transparent">
           <div className={cn("flex items-center gap-3 transition-colors", isCollapsed ? "justify-center w-full" : "")}>
-            <div className="relative flex shrink-0 items-center justify-center">
-              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-10 w-auto object-contain rounded-xl shadow-sm sm:h-12 min-w-[32px]" />
-            </div>
+            <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-10 w-auto object-contain rounded-xl shadow-sm sm:h-12 min-w-[32px]" />
             <span className={cn("mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white whitespace-nowrap overflow-hidden transition-colors duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>NAVE24</span>
           </div>
         </div>
@@ -116,9 +114,7 @@ export default function MainLayout() {
         {/* Top Header */}
         <header className="relative sticky top-0 z-40 flex h-16 w-full items-center justify-between bg-white/80 dark:bg-slate-950/80 px-4 sm:px-6 shadow-sm backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
           <div className="flex items-center gap-4 bg-transparent md:hidden">
-            <div className="relative flex shrink-0 items-center justify-center">
-              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-9 w-auto object-contain rounded-xl shadow-sm sm:h-10" />
-            </div>
+            <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-9 w-auto object-contain rounded-xl shadow-sm sm:h-10" />
           </div>
           
           <div className="hidden md:flex flex-1 max-w-md items-center justify-start pl-4">

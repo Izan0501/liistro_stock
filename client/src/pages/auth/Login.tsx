@@ -113,9 +113,7 @@ export default function Login() {
           {/* Logo */}
           <div className="mb-10">
             <div className="flex items-center gap-3 bg-transparent mb-8 overflow-hidden">
-              <div className="relative flex shrink-0 items-center justify-center">
-                <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-12 w-auto object-contain rounded-xl shadow-sm sm:h-14" />
-              </div>
+              <img src="/logo.png" alt="NAVE24 Logo" className="relative z-10 h-12 w-auto object-contain rounded-xl shadow-sm sm:h-14" />
               <span className="mt-1 text-2xl font-semibold leading-none tracking-widest text-slate-900 dark:text-white transition-colors duration-200 sm:text-3xl">
                 NAVE24
               </span>
