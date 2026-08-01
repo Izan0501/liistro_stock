@@ -263,13 +263,19 @@ export function NewProductModalWrapper({
 
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!newProduct.supplier_id) {
+      toast.error('Debes seleccionar un proveedor para este producto.');
+      return;
+    }
+
     createProductMutation.mutate({
       name: newProduct.name,
       category: newProduct.category || null,
       buy_price: parseFloat(newProduct.buy_price),
       sell_price: parseFloat(newProduct.sell_price),
       available_quantity: parseInt(newProduct.available_quantity),
-      supplier_id: newProduct.supplier_id || null,
+      supplier_id: newProduct.supplier_id,
     });
   };
 
@@ -293,15 +299,21 @@ export function NewProductModalWrapper({
                 </div>
 
                 <div className="md:col-span-6 flex flex-col justify-end">
-                  <label htmlFor="newprod-supplier" className="text-xs font-semibold uppercase tracking-widest text-slate-400 block mb-1.5">Proveedor</label>
+                  <label htmlFor="newprod-supplier" className="text-xs font-semibold uppercase tracking-widest text-slate-400 block mb-1.5">
+                    Proveedor <span className="text-red-500">*</span>
+                  </label>
                   <select
                     id="newprod-supplier"
                     aria-label="Proveedor"
                     value={newProduct.supplier_id}
                     onChange={e => setNewProduct({ ...newProduct, supplier_id: e.target.value })}
-                    className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 rounded-xl px-4 py-2.5 transition-colors transition-shadow shadow-sm appearance-none"
+                    className={`w-full bg-white dark:bg-slate-900/50 border text-slate-950 dark:text-white placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 rounded-xl px-4 py-2.5 transition-colors transition-shadow shadow-sm appearance-none ${
+                      !newProduct.supplier_id
+                        ? 'border-rose-300 dark:border-rose-500/50'
+                        : 'border-slate-300 dark:border-slate-700'
+                    }`}
                   >
-                    <option value="">Sin Proveedor</option>
+                    <option value="">— Seleccionar proveedor —</option>
                     {supplierList.map((s: any) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
