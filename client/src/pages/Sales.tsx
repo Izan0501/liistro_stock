@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Phone, Loader2, Check, Plus, Minus, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Search, MapPin, Phone, Loader2, Check, Plus, Minus, ChevronRight, ShoppingBag, Edit2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useClients, useProducts } from '../hooks/useData';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -97,7 +97,7 @@ function HybridQuantityInput({ inCart, maxStock, onUpdate }: any) {
   );
 }
 
-export default function Sales() {
+function useSalesLogic() {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [searchClient, setSearchClient] = useState('');
@@ -110,6 +110,8 @@ export default function Sales() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [newClient, setNewClient] = useState({ name: '', address: '', phone: '', company: '' });
+  const [editingClient, setEditingClient] = useState<any>(null);
+  const [selectedZone, setSelectedZone] = useState<string>('All');
 
   const { data: clients } = useClients();
   const { data: products, isLoading: productsLoading } = useProducts();
@@ -118,7 +120,21 @@ export default function Sales() {
   const clientList = Array.isArray(clients) ? clients : (clients?.items || []);
   const productList = Array.isArray(products) ? products : (products?.items || []);
 
-  const filteredClients = clientList.filter((c: any) => c.name.toLowerCase().includes(searchClient.toLowerCase()));
+  const uniqueZones = Array.from(
+    new Set(
+      clientList.reduce((acc: string[], client: any) => {
+        const addr = client.address?.trim();
+        if (addr && addr.length > 0) acc.push(addr);
+        return acc;
+      }, [])
+    )
+  ).sort() as string[];
+
+  const filteredClients = clientList.filter((c: any) => {
+    const matchesSearch = c.name.toLowerCase().includes(searchClient.toLowerCase());
+    const matchesZone = selectedZone === 'All' || c.address?.trim() === selectedZone;
+    return matchesSearch && matchesZone;
+  });
 
   const uniqueCategories = Array.from(
     new Set(
@@ -150,6 +166,20 @@ export default function Sales() {
       setIsCreatingClient(false);
       handleSelectClient(data); // Auto-select the newly created client
       setNewClient({ name: '', address: '', phone: '', company: '' });
+    }
+  });
+
+  const updateClientMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const { data } = await api.put(`/clients/${payload.id}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
+      setEditingClient(null);
+      toast.success('Cliente actualizado exitosamente');
     }
   });
 
@@ -214,8 +244,14 @@ export default function Sales() {
     createClientMutation.mutate({
       name: newClient.name,
       address: newClient.address,
-      phone: newClient.phone
+      phone: newClient.phone,
+      company: newClient.company
     });
+  };
+
+  const handleUpdateClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateClientMutation.mutate(editingClient);
   };
 
   const handleCreateSale = () => {
@@ -265,6 +301,28 @@ export default function Sales() {
     return acc + (price * item.qty);
   }, 0);
 
+  return {
+    step, setStep, selectedClient, searchClient, setSearchClient, cart, isCreatingClient, setIsCreatingClient,
+    showSuccessModal, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, newClient, setNewClient,
+    editingClient, setEditingClient, selectedZone, setSelectedZone,
+    uniqueZones, filteredClients, uniqueCategories, filteredProducts, productsLoading,
+    createClientMutation, updateClientMutation, createSaleMutation,
+    handleCloseSuccess, handleCreateClient, handleUpdateClient, handleCreateSale, handleSelectClient,
+    updateQuantity, total
+  };
+}
+
+export default function Sales() {
+  const {
+    step, setStep, selectedClient, searchClient, setSearchClient, cart, isCreatingClient, setIsCreatingClient,
+    showSuccessModal, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, newClient, setNewClient,
+    editingClient, setEditingClient, selectedZone, setSelectedZone,
+    uniqueZones, filteredClients, uniqueCategories, filteredProducts, productsLoading,
+    createClientMutation, updateClientMutation, createSaleMutation,
+    handleCloseSuccess, handleCreateClient, handleUpdateClient, handleCreateSale, handleSelectClient,
+    updateQuantity, total
+  } = useSalesLogic();
+
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)] p-4 md:p-8 pb-24 md:pb-8 animate-in fade-in transition-opacity duration-300">
       {/* Header */}
@@ -300,6 +358,15 @@ export default function Sales() {
             />
           </div>
 
+          <div className="flex w-full gap-2 overflow-x-auto pb-2 scrollbar-hide mb-2 shrink-0">
+            <button type="button" onClick={() => setSelectedZone('All')} className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors transition-shadow", selectedZone === 'All' ? 'bg-indigo-600 text-white shadow-md border-transparent' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white shadow-sm')}>Todos</button>
+            {uniqueZones.map((zone: string) => (
+              <button type="button" key={zone} onClick={() => setSelectedZone(zone)} className={cn("whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors transition-shadow", selectedZone === zone ? 'bg-indigo-600 text-white shadow-md border-transparent' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white shadow-sm')}>
+                {zone}
+              </button>
+            ))}
+          </div>
+
           <div className="flex-1 overflow-y-auto space-y-3 pb-4">
             <ClientSelectionStep
               isCreatingClient={isCreatingClient}
@@ -308,6 +375,10 @@ export default function Sales() {
               setNewClient={setNewClient}
               handleCreateClient={handleCreateClient}
               createClientMutation={createClientMutation}
+              editingClient={editingClient}
+              setEditingClient={setEditingClient}
+              handleUpdateClient={handleUpdateClient}
+              updateClientMutation={updateClientMutation}
               filteredClients={filteredClients}
               handleSelectClient={handleSelectClient}
               HoverButton={HoverButton}
@@ -316,6 +387,7 @@ export default function Sales() {
               MapPin={MapPin}
               Phone={Phone}
               ChevronRight={ChevronRight}
+              Edit2={Edit2}
             />
           </div>
         </div>
@@ -355,108 +427,191 @@ export default function Sales() {
   );
 }
 
-function ClientSelectionStep({ isCreatingClient, setIsCreatingClient, newClient, setNewClient, handleCreateClient, createClientMutation, filteredClients, handleSelectClient, HoverButton, Loader2, Plus, MapPin, Phone, ChevronRight }: any) {
+function ClientSelectionStep({ isCreatingClient, setIsCreatingClient, newClient, setNewClient, handleCreateClient, createClientMutation, editingClient, setEditingClient, handleUpdateClient, updateClientMutation, filteredClients, handleSelectClient, HoverButton, Loader2, Plus, MapPin, Phone, ChevronRight, Edit2 }: any) {
   if (isCreatingClient) {
     return (
-              <div className="glass-card p-4 space-y-4 animate-in fade-in slide-in-from-top-4 transition-opacity duration-200">
-                <h3 className="font-medium text-lg">New Client</h3>
-                <form onSubmit={handleCreateClient} className="space-y-3">
-                  <div>
-                    <label htmlFor="client-name" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Client Name</label>
-                    <input 
-                      id="client-name"
-                      type="text" 
-                      required
-                      placeholder="Client Name" 
-                      value={newClient.name}
-                      onChange={(e: any) => setNewClient({ ...newClient, name: e.target.value })}
-                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="client-company" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Company (Optional)</label>
-                    <input 
-                      id="client-company"
-                      type="text" 
-                      placeholder="Company (Optional)" 
-                      value={newClient.company}
-                      onChange={(e: any) => setNewClient({ ...newClient, company: e.target.value })}
-                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="client-address" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Address</label>
-                    <input 
-                      id="client-address"
-                      type="text" 
-                      placeholder="Address" 
-                      value={newClient.address}
-                      onChange={(e: any) => setNewClient({ ...newClient, address: e.target.value })}
-                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="client-phone" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
-                    <input 
-                      id="client-phone"
-                      type="tel" 
-                      placeholder="Phone" 
-                      value={newClient.phone}
-                      onChange={(e: any) => setNewClient({ ...newClient, phone: e.target.value })}
-                      className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
-                    />
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <button 
-                      type="button"
-                      onClick={() => setIsCreatingClient(false)}
-                      className="flex-1 py-3 rounded-lg font-medium bg-slate-100 dark:bg-white/5 text-slate-950 dark:text-slate-950 dark:text-white"
-                    >
-                      Cancel
-                    </button>
-                    <HoverButton
-                      type="submit"
-                      disabled={createClientMutation.isPending}
-                      className="flex-1"
-                      glowColor="#6366f1"
-                      backgroundColor="#0f172a"
-                    >
-                      {createClientMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Save Client
-                    </HoverButton>
-                  </div>
-                </form>
-              </div>
+      <div className="glass-card p-4 space-y-4 animate-in fade-in slide-in-from-top-4 transition-opacity duration-200">
+        <h3 className="font-medium text-lg">New Client</h3>
+        <form onSubmit={handleCreateClient} className="space-y-3">
+          <div>
+            <label htmlFor="client-name" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Client Name</label>
+            <input 
+              id="client-name"
+              type="text" 
+              required
+              placeholder="Client Name" 
+              value={newClient.name}
+              onChange={(e: any) => setNewClient({ ...newClient, name: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div>
+            <label htmlFor="client-company" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Company (Optional)</label>
+            <input 
+              id="client-company"
+              type="text" 
+              placeholder="Company (Optional)" 
+              value={newClient.company}
+              onChange={(e: any) => setNewClient({ ...newClient, company: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div>
+            <label htmlFor="client-address" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Address</label>
+            <input 
+              id="client-address"
+              type="text" 
+              placeholder="Address" 
+              value={newClient.address}
+              onChange={(e: any) => setNewClient({ ...newClient, address: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div>
+            <label htmlFor="client-phone" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+            <input 
+              id="client-phone"
+              type="tel" 
+              placeholder="Phone" 
+              value={newClient.phone}
+              onChange={(e: any) => setNewClient({ ...newClient, phone: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button"
+              onClick={() => setIsCreatingClient(false)}
+              className="flex-1 py-3 rounded-lg font-medium bg-slate-100 dark:bg-white/5 text-slate-950 dark:text-slate-950 dark:text-white"
+            >
+              Cancel
+            </button>
+            <HoverButton
+              type="submit"
+              disabled={createClientMutation.isPending}
+              className="flex-1"
+              glowColor="#6366f1"
+              backgroundColor="#0f172a"
+            >
+              {createClientMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Save Client
+            </HoverButton>
+          </div>
+        </form>
+      </div>
     );
   }
-  
+
+  if (editingClient) {
+    return (
+      <div className="glass-card p-4 space-y-4 animate-in fade-in slide-in-from-top-4 transition-opacity duration-200">
+        <h3 className="font-medium text-lg">Editar Cliente</h3>
+        <form onSubmit={handleUpdateClient} className="space-y-3">
+          <div>
+            <label htmlFor="edit-client-name" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del Cliente</label>
+            <input 
+              id="edit-client-name"
+              type="text" 
+              required
+              placeholder="Nombre del Cliente" 
+              value={editingClient.name || ''}
+              onChange={(e: any) => setEditingClient({ ...editingClient, name: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div>
+            <label htmlFor="edit-client-company" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Empresa (Opcional)</label>
+            <input 
+              id="edit-client-company"
+              type="text" 
+              placeholder="Empresa (Opcional)" 
+              value={editingClient.company || ''}
+              onChange={(e: any) => setEditingClient({ ...editingClient, company: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div>
+            <label htmlFor="edit-client-address" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Dirección</label>
+            <input 
+              id="edit-client-address"
+              type="text" 
+              placeholder="Dirección" 
+              value={editingClient.address || ''}
+              onChange={(e: any) => setEditingClient({ ...editingClient, address: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div>
+            <label htmlFor="edit-client-phone" className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
+            <input 
+              id="edit-client-phone"
+              type="tel" 
+              placeholder="Teléfono" 
+              value={editingClient.phone || ''}
+              onChange={(e: any) => setEditingClient({ ...editingClient, phone: e.target.value })}
+              className="w-full bg-white border border-slate-300 text-slate-950 placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/20 dark:bg-slate-950/50 dark:border-slate-700 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-0 rounded-lg px-4 py-3 focus:outline-none focus:border-accent-indigo" 
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button 
+              type="button"
+              onClick={() => setEditingClient(null)}
+              className="flex-1 py-3 rounded-lg font-medium bg-slate-100 dark:bg-white/5 text-slate-950 dark:text-slate-950 dark:text-white"
+            >
+              Cancelar
+            </button>
+            <HoverButton
+              type="submit"
+              disabled={updateClientMutation.isPending}
+              className="flex-1"
+              glowColor="#6366f1"
+              backgroundColor="#0f172a"
+            >
+              {updateClientMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Guardar
+            </HoverButton>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
-              <>
-                <button type="button" 
-                  onClick={() => setIsCreatingClient(true)}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:border-indigo-600 dark:hover:border-indigo-400 transition-colors font-medium"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="font-medium">Crear nuevo cliente</span>
-                </button>
-                
-                {filteredClients.map((client: any) => (
-                  <button type="button" 
-                    key={client.id}
-                    onClick={() => handleSelectClient(client)}
-                    className="flex w-full items-center justify-between p-4 rounded-2xl border transition-colors transition-shadow cursor-pointer bg-white border-slate-200 text-slate-950 hover:border-indigo-500 hover:shadow-md dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:hover:border-indigo-500 text-left"
-                  >
-                    <div>
-                      <div className="font-bold text-lg">{client.name}</div>
-                      <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-                        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {client.address}</span>
-                        <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {client.phone}</span>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-6 h-6 text-slate-500 dark:text-slate-400" />
-                  </button>
-                ))}
-              </>
+    <>
+      <button type="button" 
+        onClick={() => setIsCreatingClient(true)}
+        className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:border-indigo-600 dark:hover:border-indigo-400 transition-colors font-medium"
+      >
+        <Plus className="w-5 h-5" />
+        <span className="font-medium">Crear nuevo cliente</span>
+      </button>
+      
+      {filteredClients.map((client: any) => (
+        <div 
+          key={client.id}
+          className="flex w-full items-center justify-between p-4 rounded-2xl border transition-colors transition-shadow bg-white border-slate-200 text-slate-950 hover:border-indigo-500 hover:shadow-md dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:hover:border-indigo-500"
+        >
+          <button type="button" onClick={() => handleSelectClient(client)} className="flex-1 text-left flex flex-col justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg">
+            <div className="font-bold text-lg">{client.name}</div>
+            <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {client.address}</span>
+              <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {client.phone}</span>
+            </div>
+          </button>
+          <div className="flex items-center pl-2 shrink-0">
+            <button 
+              type="button"
+              onClick={() => setEditingClient(client)}
+              className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label="Editar cliente"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+            <ChevronRight className="w-6 h-6 text-slate-500 dark:text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 
