@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, FileText, Loader2, ArrowUpDown, Plus, Building2, Mail, Phone, Box, Check } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Search, FileText, Loader2, ArrowUpDown, Plus, Building2, Mail, Phone, Box, Check, TrendingDown } from 'lucide-react';
 import { Confetti } from '../components/ui/confetti';
 import { cn } from '../lib/utils';
 import { HoverButton } from '../components/ui/HoverButton';
@@ -15,6 +15,8 @@ import { api } from '../services/api';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const formatCurrency = (val: number) => currencyFormatter.format(val);
+const arsFormatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const formatARS = (val: number) => arsFormatter.format(val);
     
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('es-AR', {
@@ -23,7 +25,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export default function Purchases() {
+function usePurchasesLogic() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
@@ -33,8 +35,8 @@ export default function Purchases() {
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [selectedEditSupplier, setSelectedEditSupplier] = useState<any>(null);
   const [newSupplier, setNewSupplier] = useState({ name: '', contact_email: '', contact_phone: '' });
-  const [activeTab, setActiveTab] = useState<'history' | 'directory'>('history');
-  
+  const [activeTab, setActiveTab] = useState<'history' | 'directory' | 'gasto-total'>('history');
+
   const queryClient = useQueryClient();
 
   const apiDateRange = dateRange?.from ? {
@@ -71,13 +73,54 @@ export default function Purchases() {
     });
   };
 
-  const purchases = Array.isArray(purchasesData) ? purchasesData : (purchasesData?.items || purchasesData?.data || []);
-  const suppliersList = Array.isArray(suppliersData) ? suppliersData : (suppliersData?.items || suppliersData?.data || []);
+  const purchases = useMemo(
+    () => Array.isArray(purchasesData) ? purchasesData : (purchasesData?.items || purchasesData?.data || []),
+    [purchasesData]
+  );
+  const suppliersList = useMemo(
+    () => Array.isArray(suppliersData) ? suppliersData : (suppliersData?.items || suppliersData?.data || []),
+    [suppliersData]
+  );
 
   const filtered = purchases.filter((p: any) => {
     const supplierName = p.supplier?.name || p.supplier_name || 'Desconocido';
     return supplierName.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  const { globalTotal, supplierTotals } = useMemo(() => {
+    if (!purchases.length) return { globalTotal: 0, supplierTotals: [] as { name: string; totalSpent: number }[] };
+    let total = 0;
+    const supplierMap = new Map<string, number>();
+    purchases.forEach((purchase: any) => {
+      const amount = Number(purchase.total_amount || purchase.total_cost || 0);
+      const name = purchase.supplier?.name || purchase.supplier_name || 'Proveedor Desconocido';
+      total += amount;
+      supplierMap.set(name, (supplierMap.get(name) ?? 0) + amount);
+    });
+    const supplierTotals = Array.from(supplierMap, ([name, totalSpent]) => ({ name, totalSpent }))
+      .sort((a, b) => b.totalSpent - a.totalSpent);
+    return { globalTotal: total, supplierTotals };
+  }, [purchases]);
+
+  return {
+    searchTerm, setSearchTerm, dateRange, setDateRange, selectedPurchase, setSelectedPurchase,
+    isNewSupplierModalOpen, setIsNewSupplierModalOpen, showSupplierSuccess, setShowSupplierSuccess,
+    showEditSuccess, setShowEditSuccess, showDeleteSuccess, setShowDeleteSuccess,
+    selectedEditSupplier, setSelectedEditSupplier, newSupplier, setNewSupplier,
+    activeTab, setActiveTab, isLoading, isLoadingSuppliers, createSupplierMutation,
+    handleCreateSupplier, purchases, suppliersList, filtered, globalTotal, supplierTotals
+  };
+}
+
+export default function Purchases() {
+  const {
+    searchTerm, setSearchTerm, dateRange, setDateRange, selectedPurchase, setSelectedPurchase,
+    isNewSupplierModalOpen, setIsNewSupplierModalOpen, showSupplierSuccess, setShowSupplierSuccess,
+    showEditSuccess, setShowEditSuccess, showDeleteSuccess, setShowDeleteSuccess,
+    selectedEditSupplier, setSelectedEditSupplier, newSupplier, setNewSupplier,
+    activeTab, setActiveTab, isLoading, isLoadingSuppliers, createSupplierMutation,
+    handleCreateSupplier, suppliersList, filtered, globalTotal, supplierTotals
+  } = usePurchasesLogic();
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in transition-opacity duration-300 p-4 md:p-8 pb-24 md:pb-8">
@@ -119,6 +162,16 @@ export default function Purchases() {
           }`}
         >
           Directorio de Proveedores
+        </button>
+        <button type="button" 
+          onClick={() => setActiveTab('gasto-total')}
+          className={`py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'gasto-total' 
+              ? 'border-accent-indigo text-indigo-600 dark:text-indigo-400' 
+              : 'border-transparent text-slate-400 hover:text-slate-950 dark:text-white hover:border-slate-300 dark:border-white/20'
+          }`}
+        >
+          Gasto total
         </button>
       </div>
 
@@ -238,7 +291,7 @@ export default function Purchases() {
             })}
           </div>
         </>
-      ) : (
+      ) : activeTab === 'directory' ? (
         <>
           {/* Supplier Directory Tab */}
           {isLoadingSuppliers ? (
@@ -266,6 +319,14 @@ export default function Purchases() {
             </div>
           )}
         </>
+      ) : (
+        <GastoTotalTab
+          globalTotal={globalTotal}
+          supplierTotals={supplierTotals}
+          isLoading={isLoading}
+          Loader2={Loader2}
+          TrendingDown={TrendingDown}
+        />
       )}
 
       <PurchaseReceiptModal purchase={selectedPurchase} onClose={() => setSelectedPurchase(null)} />
@@ -451,5 +512,83 @@ function SuppliersGrid({ suppliersList, setSelectedEditSupplier }: any) {
         </button>
       ))}
     </>
+  );
+}
+
+function GastoTotalTab({ globalTotal, supplierTotals, isLoading, Loader2, TrendingDown }: any) {
+  if (isLoading) {
+    return (
+      <div className="glass-card p-12 flex justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-600 dark:text-indigo-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 transition-opacity duration-200 opacity-100">
+
+      {/* Hero — Global Total */}
+      <div className="relative overflow-hidden rounded-2xl border border-rose-200/60 dark:border-rose-500/20 bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-slate-950 p-6 md:p-8 shadow-sm">
+        {/* Decorative glow */}
+        <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rounded-full bg-rose-400/10 dark:bg-rose-500/10 blur-3xl" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-rose-600/80 dark:text-rose-400/80 uppercase tracking-widest mb-1">Gasto total en compras</p>
+            <p className="text-4xl md:text-5xl font-black tracking-tight text-slate-950 dark:text-white">
+              {formatARS(globalTotal)}
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              Suma acumulada de {supplierTotals.length} proveedor{supplierTotals.length !== 1 ? 'es' : ''}
+            </p>
+          </div>
+          <div className="shrink-0 bg-rose-100 dark:bg-rose-500/10 p-3.5 rounded-xl border border-rose-200/60 dark:border-rose-500/20">
+            <TrendingDown className="w-7 h-7 text-rose-500 dark:text-rose-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Supplier Breakdown */}
+      {supplierTotals.length === 0 ? (
+        <div className="glass-card p-10 text-center text-slate-500 dark:text-slate-400 text-sm">
+          No hay compras registradas aún.
+        </div>
+      ) : (
+        <div className="glass-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800">
+            <h3 className="font-semibold text-slate-950 dark:text-white text-sm tracking-tight">Desglose por proveedor</h3>
+          </div>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800/60">
+            {supplierTotals.map((supplier: { name: string; totalSpent: number }) => {
+              const pct = globalTotal > 0 ? (supplier.totalSpent / globalTotal) * 100 : 0;
+              return (
+                <li key={supplier.name} className="px-5 py-4 flex flex-col gap-2 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/10 flex items-center justify-center">
+                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                          {supplier.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="font-medium text-slate-950 dark:text-white truncate text-sm">{supplier.name}</span>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="font-bold text-slate-950 dark:text-white text-sm">{formatARS(supplier.totalSpent)}</span>
+                      <span className="block text-xs text-slate-400 dark:text-slate-500">{pct.toFixed(1)}% del total</span>
+                    </div>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-[width] duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
