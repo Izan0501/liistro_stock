@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Phone, Loader2, Check, Plus, Minus, ChevronRight, ShoppingBag, Edit2 } from 'lucide-react';
+import { Search, MapPin, Phone, Loader2, Check, Plus, Minus, ChevronRight, ShoppingBag, Edit2, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useClients, useProducts } from '../hooks/useData';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -180,6 +180,25 @@ function useSalesLogic() {
       queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       setEditingClient(null);
       toast.success('Cliente actualizado exitosamente');
+    },
+    onError: () => {
+      toast.error('Error al actualizar el cliente. Intenta de nuevo.');
+    }
+  });
+
+  const deleteClientMutation = useMutation({
+    mutationFn: async (clientId: string | number) => {
+      await api.delete(`/clients/${clientId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
+      setEditingClient(null);
+      toast.success('Cliente eliminado correctamente.');
+    },
+    onError: () => {
+      toast.error('Error al eliminar el cliente. Intenta de nuevo.');
     }
   });
 
@@ -306,7 +325,7 @@ function useSalesLogic() {
     showSuccessModal, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, newClient, setNewClient,
     editingClient, setEditingClient, selectedZone, setSelectedZone,
     uniqueZones, filteredClients, uniqueCategories, filteredProducts, productsLoading,
-    createClientMutation, updateClientMutation, createSaleMutation,
+    createClientMutation, updateClientMutation, deleteClientMutation, createSaleMutation,
     handleCloseSuccess, handleCreateClient, handleUpdateClient, handleCreateSale, handleSelectClient,
     updateQuantity, total
   };
@@ -318,7 +337,7 @@ export default function Sales() {
     showSuccessModal, searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, newClient, setNewClient,
     editingClient, setEditingClient, selectedZone, setSelectedZone,
     uniqueZones, filteredClients, uniqueCategories, filteredProducts, productsLoading,
-    createClientMutation, updateClientMutation, createSaleMutation,
+    createClientMutation, updateClientMutation, deleteClientMutation, createSaleMutation,
     handleCloseSuccess, handleCreateClient, handleUpdateClient, handleCreateSale, handleSelectClient,
     updateQuantity, total
   } = useSalesLogic();
@@ -388,6 +407,8 @@ export default function Sales() {
               Phone={Phone}
               ChevronRight={ChevronRight}
               Edit2={Edit2}
+              Trash2={Trash2}
+              deleteClientMutation={deleteClientMutation}
             />
           </div>
         </div>
@@ -427,7 +448,7 @@ export default function Sales() {
   );
 }
 
-function ClientSelectionStep({ isCreatingClient, setIsCreatingClient, newClient, setNewClient, handleCreateClient, createClientMutation, editingClient, setEditingClient, handleUpdateClient, updateClientMutation, filteredClients, handleSelectClient, HoverButton, Loader2, Plus, MapPin, Phone, ChevronRight, Edit2 }: any) {
+function ClientSelectionStep({ isCreatingClient, setIsCreatingClient, newClient, setNewClient, handleCreateClient, createClientMutation, editingClient, setEditingClient, handleUpdateClient, updateClientMutation, deleteClientMutation, filteredClients, handleSelectClient, HoverButton, Loader2, Plus, MapPin, Phone, ChevronRight, Edit2, Trash2 }: any) {
   if (isCreatingClient) {
     return (
       <div className="glass-card p-4 space-y-4 animate-in fade-in slide-in-from-top-4 transition-opacity duration-200">
@@ -556,13 +577,27 @@ function ClientSelectionStep({ isCreatingClient, setIsCreatingClient, newClient,
             <button 
               type="button"
               onClick={() => setEditingClient(null)}
-              className="flex-1 py-3 rounded-lg font-medium bg-slate-100 dark:bg-white/5 text-slate-950 dark:text-slate-950 dark:text-white"
+              className="py-3 px-4 rounded-lg font-medium bg-slate-100 dark:bg-white/5 text-slate-950 dark:text-white"
             >
               Cancelar
             </button>
+            <button 
+              type="button"
+              onClick={() => {
+                if (window.confirm(`¿Eliminar a "${editingClient.name}"? Esta acción no se puede deshacer.`)) {
+                  deleteClientMutation.mutate(editingClient.id);
+                }
+              }}
+              disabled={deleteClientMutation.isPending || updateClientMutation.isPending}
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Eliminar cliente"
+            >
+              {deleteClientMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Eliminar
+            </button>
             <HoverButton
               type="submit"
-              disabled={updateClientMutation.isPending}
+              disabled={updateClientMutation.isPending || deleteClientMutation.isPending}
               className="flex-1"
               glowColor="#6366f1"
               backgroundColor="#0f172a"
