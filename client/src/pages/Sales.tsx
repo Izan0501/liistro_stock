@@ -171,7 +171,15 @@ function useSalesLogic() {
 
   const updateClientMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const { data } = await api.put(`/clients/${payload.id}`, payload);
+      const targetId = payload?.id;
+      if (!targetId) throw new Error('Client ID is missing.');
+      // Send only the fields the backend schema accepts
+      const body = {
+        name: payload.name || undefined,
+        phone: payload.phone || undefined,
+        address: payload.address || undefined,
+      };
+      const { data } = await api.patch(`/clients/${targetId}`, body);
       return data;
     },
     onSuccess: () => {
@@ -181,13 +189,17 @@ function useSalesLogic() {
       setEditingClient(null);
       toast.success('Cliente actualizado exitosamente');
     },
-    onError: () => {
-      toast.error('Error al actualizar el cliente. Intenta de nuevo.');
+    onError: (err: any) => {
+      const msg = err?.message === 'Client ID is missing.'
+        ? 'Error: ID de cliente no encontrado.'
+        : 'Error al actualizar el cliente. Intenta de nuevo.';
+      toast.error(msg);
     }
   });
 
   const deleteClientMutation = useMutation({
     mutationFn: async (clientId: string | number) => {
+      if (!clientId) throw new Error('Client ID is missing.');
       await api.delete(`/clients/${clientId}`);
     },
     onSuccess: () => {
@@ -197,8 +209,11 @@ function useSalesLogic() {
       setEditingClient(null);
       toast.success('Cliente eliminado correctamente.');
     },
-    onError: () => {
-      toast.error('Error al eliminar el cliente. Intenta de nuevo.');
+    onError: (err: any) => {
+      const msg = err?.message === 'Client ID is missing.'
+        ? 'Error: ID de cliente no encontrado.'
+        : 'Error al eliminar el cliente. Intenta de nuevo.';
+      toast.error(msg);
     }
   });
 
@@ -270,6 +285,11 @@ function useSalesLogic() {
 
   const handleUpdateClient = (e: React.FormEvent) => {
     e.preventDefault();
+    const targetId = editingClient?.id;
+    if (!targetId) {
+      toast.error('Error: ID de cliente no encontrado.');
+      return;
+    }
     updateClientMutation.mutate(editingClient);
   };
 
