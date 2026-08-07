@@ -269,9 +269,14 @@ export function NewProductModalWrapper({
       return;
     }
 
+    if (!newProduct.category.trim()) {
+      toast.error('Debes seleccionar una categoría para este producto.');
+      return;
+    }
+
     createProductMutation.mutate({
       name: newProduct.name,
-      category: newProduct.category || null,
+      category: newProduct.category,
       buy_price: parseFloat(newProduct.buy_price),
       sell_price: parseFloat(newProduct.sell_price),
       available_quantity: parseInt(newProduct.available_quantity),
@@ -321,7 +326,9 @@ export function NewProductModalWrapper({
                 </div>
 
                 <div className="md:col-span-6 flex flex-col justify-end">
-                  <label htmlFor="newprod-category" className="text-xs font-semibold uppercase tracking-widest text-slate-400 block mb-1.5">Categoría</label>
+                  <label htmlFor="newprod-category" className="text-xs font-semibold uppercase tracking-widest text-slate-400 block mb-1.5">
+                    Categoría <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
                     <input
                       id="newprod-category"
@@ -334,7 +341,11 @@ export function NewProductModalWrapper({
                       onFocus={() => setShowCategorySuggestions(true)}
                       onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
                       placeholder="Ej. Electrónica, Bebidas..."
-                      className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 text-slate-950 dark:text-white placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 rounded-xl px-4 py-2.5 transition-colors transition-shadow shadow-sm"
+                      className={`w-full bg-white dark:bg-slate-900/50 border text-slate-950 dark:text-white placeholder:text-slate-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 rounded-xl px-4 py-2.5 transition-colors transition-shadow shadow-sm ${
+                        !newProduct.category.trim()
+                          ? 'border-rose-300 dark:border-rose-500/50'
+                          : 'border-slate-300 dark:border-slate-700'
+                      }`}
                       autoComplete="off"
                     />
                     
