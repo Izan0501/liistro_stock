@@ -11,6 +11,7 @@ server/**/__pycache__/
 server/.env
 server/alembic/versions/*.pyc
 .env
+mcp.json
 
 # --- FRONTEND (Client / Node / Vite) ---
 client/node_modules/
