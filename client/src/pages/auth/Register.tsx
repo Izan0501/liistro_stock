@@ -94,6 +94,18 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ─── KILL SWITCH ─────────────────────────────────────────────────────────
+    // Set to false to restore normal registration flow.
+    const IS_SYSTEM_LOCKED = true;
+    if (IS_SYSTEM_LOCKED) {
+      toast.error('El sistema sufrio cambios en la seguridad que deben ser efectuados, por favor comunicate con tu programador', {
+        duration: 8000,
+      });
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     if (!validateForm()) return;
     
     setLoading(true);
