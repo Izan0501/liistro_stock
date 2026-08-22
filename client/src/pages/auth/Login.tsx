@@ -63,16 +63,6 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // ─── KILL SWITCH ─────────────────────────────────────────────────────────
-    // Set to false to restore normal login flow.
-    const IS_SYSTEM_LOCKED = true;
-    if (IS_SYSTEM_LOCKED) {
-      setError('El sistema sufrio cambios en la seguridad que deben ser efectuados, por favor comunicate con tu programador');
-      return;
-    }
-    // ─────────────────────────────────────────────────────────────────────────
-
     setLoading(true);
     setError('');
 
